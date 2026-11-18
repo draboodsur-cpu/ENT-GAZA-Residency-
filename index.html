@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#24324A">
+<title>ENT Residency Program</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#F2F4F6;--surface:#FFFFFF;--ink:#1C2536;--muted:#5C6676;--line:#D8DDE4;--brand:#24324A;--on-brand:#fff;--act:#3B5BDB;--act-soft:#E6EBFB;
+--l1:#E9EEF3;--l1t:#5C6676;--l2:#CFE5DA;--l2t:#245A44;--l3:#6DB493;--l3t:#0F2E22;--l4:#1F6B4E;--l4t:#FFFFFF;
+--ent:#DCE6F7;--sub:#D6EEE3;--ext:#F6E5CF;--res:#EADFF5;--chief:#F3D6D6;--warn:#B45309;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#10151D;--surface:#171E29;--ink:#E3E8EF;--muted:#98A2B1;--line:#2A3444;--brand:#9DB3E0;--on-brand:#0E1626;--act:#8EA6F2;--act-soft:#1E2A47;
+--l1:#212A37;--l1t:#98A2B1;--l2:#1E3B30;--l2t:#A9D9C1;--l3:#2F7A5A;--l3t:#E8FFF4;--l4:#62C79A;--l4t:#0B2219;
+--ent:#22304A;--sub:#1E3A30;--ext:#3D3020;--res:#33284A;--chief:#43262A;--warn:#F0A44B;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid var(--act);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+header.app{background:var(--brand);color:var(--on-brand);padding:18px 16px 0}
+header.app .in{max-width:980px;margin:0 auto}
+header.app h1{margin:0;font-size:1.45rem;font-weight:700;letter-spacing:-.01em}
+header.app p{margin:2px 0 12px;opacity:.85;font-size:.9rem}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;max-width:980px;margin:0 auto}
+nav.tabs button{flex:none;border:0;background:none;color:inherit;opacity:.75;padding:10px 12px 12px;font-weight:600;border-bottom:3px solid transparent}
+nav.tabs button[aria-selected=true]{opacity:1;border-bottom-color:currentColor}
+main{max-width:980px;margin:0 auto;padding:18px 16px 80px}
+h2{font-size:1.15rem;margin:26px 0 10px}h2:first-child{margin-top:0}
+h3{font-size:1rem;margin:18px 0 8px}
+.lead{color:var(--muted);margin:-4px 0 14px;max-width:70ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 13px;font-weight:600;font-size:.9rem}
+.btn.p{background:var(--act);border-color:var(--act);color:#fff}
+@media (prefers-color-scheme:dark){.btn.p{color:#0E1626}}
+.btn.sm{padding:5px 10px;font-size:.84rem}
+.btn.d{color:#B42318}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:.86rem;color:var(--muted)}
+.chips button[aria-pressed=true]{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+/* this week */
+.session{display:grid;grid-template-columns:120px 1fr;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.session .date{background:var(--brand);color:var(--on-brand);padding:14px;display:flex;flex-direction:column;justify-content:center}
+.session .date b{font-size:2rem;line-height:1}.session .date span{font-size:.85rem;opacity:.85}
+.session ol{list-style:none;margin:0;padding:6px 14px}
+.session li{padding:10px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:auto 1fr;gap:2px 12px}
+.session li:first-child{border-top:0}
+.session .tm{color:var(--muted);font-size:.85rem;padding-top:1px;min-width:46px}
+.session .what{font-weight:600}.session .who{grid-column:2;color:var(--muted);font-size:.88rem}
+.session li.quiz .what{color:var(--warn)}
+@media (max-width:520px){.session{grid-template-columns:1fr}.session .date{flex-direction:row;gap:10px;align-items:baseline}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:700px){.grid2{grid-template-columns:1fr}}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:.92rem}.kv:first-of-type{border-top:0}
+.kv span:first-child{font-weight:600;white-space:nowrap}.kv span:last-child{color:var(--muted);text-align:right}
+/* lectures */
+.block{margin-bottom:18px}
+.block .bh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.block .bh h3{margin:0}.block .bh small{color:var(--muted)}
+.lec{display:grid;grid-template-columns:92px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.lec:first-child{border-top:0}
+.lec .d{font-weight:600;font-size:.88rem}.lec .d small{display:block;color:var(--muted);font-weight:400}
+.lec .t{font-weight:600}.lec .s{font-size:.86rem;color:var(--muted);margin-top:2px}
+.lec select{font-size:.82rem;padding:2px 4px;border:1px solid var(--line);border-radius:6px;background:var(--surface);max-width:180px}
+.lec.special .t{color:var(--warn)}
+.lec.past{opacity:.55}
+.lec .skip{float:right}
+/* matrix */
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.84rem;margin:0 0 12px}
+.legend i{display:inline-flex;width:22px;height:22px;border-radius:5px;align-items:center;justify-content:center;font-style:normal;font-weight:700;font-size:.78rem;margin-right:5px;vertical-align:middle}
+table.mx{width:100%;border-collapse:separate;border-spacing:0 3px;font-size:.9rem}
+table.mx th{font-size:.8rem;color:var(--muted);font-weight:600;text-align:center;padding:4px}
+table.mx th:first-child{text-align:left}
+table.mx td{padding:0}
+table.mx td.p{padding:6px 8px 6px 0;font-weight:500}
+table.mx td.c{width:46px}
+table.mx td.c i{display:flex;height:30px;margin:0 2px;border-radius:5px;align-items:center;justify-content:center;font-style:normal;font-weight:700;font-size:.8rem}
+table.mx td.tg{width:58px;text-align:right;color:var(--muted);font-size:.85rem;padding-right:4px}
+table.mx tr.grp td{padding:14px 0 2px;font-weight:700;font-size:.92rem}
+table.mx .dim{opacity:.28}
+.L1{background:var(--l1);color:var(--l1t)}.L2{background:var(--l2);color:var(--l2t)}.L3{background:var(--l3);color:var(--l3t)}.L4{background:var(--l4);color:var(--l4t)}
+/* rotations */
+.rgrid{overflow-x:auto}
+table.rt{border-collapse:separate;border-spacing:2px;font-size:.78rem;min-width:760px;width:100%;table-layout:fixed}
+table.rt th{color:var(--muted);font-weight:600;padding:4px;text-align:center}
+table.rt th.n{text-align:left;width:130px;font-size:.86rem;color:var(--ink)}
+table.rt td{padding:6px 4px;border-radius:5px;text-align:center;line-height:1.2;vertical-align:middle}
+.c-ent{background:var(--ent)}.c-sub{background:var(--sub)}.c-ext{background:var(--ext)}.c-res{background:var(--res)}.c-chief{background:var(--chief)}
+.plan .yr{margin-bottom:14px}
+.bar{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.bar div{padding:8px 6px;font-size:.8rem;line-height:1.25;border-right:2px solid var(--surface)}
+.bar div:last-child{border-right:0}
+.bar small{display:block;opacity:.7}
+/* lists */
+.list .it{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.list .it:first-child{border-top:0}
+.list .it .m{flex:1;min-width:0}.list .it .m b{display:block}.list .it .m small{color:var(--muted)}
+.lvl{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:26px;border-radius:6px;background:var(--brand);color:var(--on-brand);font-weight:700;font-size:.82rem}
+label.f{display:block;margin-bottom:10px}label.f span{display:block;font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:3px}
+label.f input,label.f select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.empty{color:var(--muted);padding:20px;text-align:center;border:1px dashed var(--line);border-radius:12px;background:var(--surface)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 15px;border-radius:9px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;font-size:.9rem}
+.toast.show{opacity:1}
+.note{font-size:.85rem;color:var(--muted)}
+.quiz{display:grid;grid-template-columns:92px 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.quiz:first-child{border-top:0}
+.quiz .t{font-weight:600}.quiz .s{font-size:.86rem;color:var(--muted)}
+.tag{display:inline-block;font-size:.74rem;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--act-soft);color:var(--act);margin-left:6px;vertical-align:1px}
+.res-card{border-top:1px solid var(--line);padding:12px 0}.res-card:first-child{border-top:0}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;display:none;align-items:flex-end;justify-content:center}
+.scrim.open{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:640px;border-radius:18px 18px 0 0;max-height:92vh;overflow:auto;padding:16px 16px 22px}
+.sheet h3{margin:0 0 4px}
+.st-held{color:#1F7A4D;font-weight:700}.st-cancel{color:#B42318;font-weight:700}.st-none{color:var(--muted)}
+.attl label{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.attl label:first-child{border-top:0}
+.attl input[type=checkbox]{width:20px;height:20px}
+.attl input[type=number]{width:80px;margin-left:auto;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface)}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;margin:8px 0 12px}
+.seg button{flex:1;border:0;background:none;padding:8px;border-radius:7px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--brand);color:var(--on-brand)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+@media (max-width:620px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpis div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpis b{display:block;font-size:1.5rem;line-height:1.2}.kpis span{font-size:.8rem;color:var(--muted)}
+table.rep{width:100%;border-collapse:collapse;font-size:.84rem}
+table.rep th,table.rep td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:top}
+table.rep th{color:var(--muted);font-weight:600;font-size:.78rem;background:var(--bg)}
+table.rep td.n{text-align:center}
+.rep-wrap{overflow-x:auto}
+.lock{position:fixed;inset:0;z-index:80;background:var(--brand);color:var(--on-brand);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;text-align:center}
+.lock.open{display:flex}
+.dots{display:flex;gap:12px}.dots i{width:14px;height:14px;border-radius:50%;border:2px solid currentColor}.dots i.f{background:currentColor}
+.pad{display:grid;grid-template-columns:repeat(3,70px);gap:12px}
+.pad button{height:62px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:inherit;font-size:1.4rem;font-weight:600}
+.gate{max-width:440px;margin:40px auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.gate h2{margin-top:0}
+.viewer-tag{display:inline-block;margin-left:8px;font-size:.75rem;background:rgba(255,255,255,.2);padding:1px 8px;border-radius:999px;vertical-align:3px}
+@media print{header.app nav,.noprint,.btn,.toast,.scrim,.lock{display:none!important}.kpis div{border-color:#bbb}table.rep{font-size:10.5pt}table.rep th{background:#eee}h2{break-after:avoid}.panel{break-inside:auto}header.app{background:none;color:#000}body{background:#fff}.panel{border-color:#bbb}main{padding:0}}
+</style>
+</head>
+<body>
+<header class="app"><div class="in"><h1 id="pname">ENT Residency Program</h1><p id="psub"></p></div>
+<nav class="tabs" role="tablist">
+ <button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="quizzes">Exams</button><button data-t="ops">Operative levels</button><button data-t="rot">Rotations</button><button data-t="frame">Training framework</button><button data-t="report">Reports</button><button data-t="res" class="admin-only">Residents & settings</button>
+</nav></header>
+<main id="view"></main>
+<div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+<div class="lock" id="lock"><h2 id="lockT" style="margin:0">Enter PIN</h2><div class="dots" id="dots"></div><div id="lerr" style="min-height:1.3em"></div><div class="pad" id="pad"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const CURRICULUM={
+A:[
+ {name:"Ear basics and audiology",lead:[1,3],ref:"Scott-Brown Vol 2; Cummings (Otology, Audiology); KJ Lee",topics:["Temporal bone anatomy and embryology of the ear","Physiology of hearing and balance","Pure tone and speech audiometry, masking","Tympanometry, acoustic reflexes, OAE and ABR","Vestibular assessment: VNG, calorics, vHIT, VEMP"]},
+ {name:"Otology I: external and middle ear",lead:[1,3],ref:"Scott-Brown Vol 2; Cummings (Otology)",topics:["External ear disease: otitis externa, necrotising otitis externa, exostoses","Acute otitis media and its management","Otitis media with effusion and ventilation tubes","Chronic otitis media (mucosal) and tympanoplasty","Cholesteatoma and principles of mastoid surgery"]},
+ {name:"Rhinology I",lead:[1,3],ref:"Scott-Brown Vol 1; EPOS 2020; Cummings (Rhinology)",topics:["Nasal and sinus anatomy, endoscopic anatomy","Nasal physiology and olfaction","Allergic and non-allergic rhinitis","Acute and chronic rhinosinusitis (EPOS 2020)","Epistaxis: assessment and stepwise management"]},
+ {name:"Laryngology I",lead:[1,3],ref:"Scott-Brown Vol 3; Cummings (Laryngology)",topics:["Laryngeal anatomy, phonation and swallowing physiology","Voice assessment and benign vocal fold lesions","Laryngeal inflammation, infections and LPR","Vocal fold paralysis","Upper airway obstruction and tracheostomy care"]},
+ {name:"Paediatric ENT I",lead:[1,3],ref:"Scott-Brown Vol 2 (Paediatrics); Cummings (Pediatric Otolaryngology)",topics:["Embryology of head and neck, branchial anomalies","Paediatric airway and stridor: laryngomalacia, subglottic stenosis","Tonsils, adenoids and paediatric OSA","Congenital hearing loss and newborn hearing screening","Foreign bodies: ear, nose, airway and oesophagus"]},
+ {name:"Head and neck I",lead:[1,3],ref:"Scott-Brown Vol 3; Bailey's Head & Neck Surgery",topics:["Neck anatomy, fascial spaces and lymph node levels","Deep neck space infections","Evaluation of the adult neck mass","Thyroid nodule: TI-RADS and Bethesda","Non-neoplastic salivary gland disease"]},
+ {name:"Facial nerve, trauma and facial plastics",lead:[1,3],ref:"Cummings (Facial Plastic, Otology); Bailey's",topics:["Facial nerve anatomy and facial palsy (Bell's, Ramsay Hunt)","Maxillofacial trauma and nasal fractures","Temporal bone fractures","Principles of septorhinoplasty","Facial skin cancer and local flaps"]},
+ {name:"Emergencies and perioperative care",lead:[1,3],ref:"Scott-Brown; KJ Lee",topics:["ENT emergencies: triage and first-line management","Post-tonsillectomy haemorrhage and bleeding disorders","Anaesthesia for ENT: shared airway and laser safety","Antibiotics and antimicrobial stewardship in ENT","Consent, communication and medicolegal practice"]}
+],
+B:[
+ {name:"Otology II: inner ear",lead:[3,5],ref:"Scott-Brown Vol 2; Cummings (Neurotology)",topics:["Sensorineural hearing loss and sudden SNHL","Ménière's disease and endolymphatic hydrops","BPPV, vestibular neuritis and central vertigo","Otosclerosis and stapes surgery","Tinnitus and hyperacusis"]},
+ {name:"Otology III: complications and skull base",lead:[3,5],ref:"Scott-Brown Vol 2; Cummings (Neurotology)",topics:["Complications of otitis media: intratemporal and intracranial","Vestibular schwannoma and CPA lesions","Paragangliomas and the lateral skull base","Hearing aids and implantable devices (BAHA, middle ear implants)","Cochlear implantation: candidacy, surgery, outcomes"]},
+ {name:"Rhinology II and anterior skull base",lead:[3,5],ref:"Scott-Brown Vol 1; EPOS 2020; Cummings (Rhinology)",topics:["CRSwNP, type 2 inflammation and biologics","Fungal rhinosinusitis: invasive and allergic","Orbital and intracranial complications of sinusitis","Sinonasal tumours: inverted papilloma and malignancy","CSF rhinorrhoea and endoscopic skull base repair"]},
+ {name:"Laryngology II",lead:[3,5],ref:"Scott-Brown Vol 3; Cummings; AJCC 8th; NCCN",topics:["Laryngeal cancer: staging (AJCC 8th) and treatment (NCCN)","Dysphagia: assessment and management","Professional voice and laryngeal framework surgery","Subglottic and tracheal stenosis","Recurrent respiratory papillomatosis and laryngeal lasers"]},
+ {name:"Head and neck oncology I",lead:[3,5],ref:"AJCC 8th; NCCN Head & Neck; Bailey's; Scott-Brown Vol 3",topics:["Principles of head and neck cancer: epidemiology, staging, MDT","Oral cavity cancer","Oropharyngeal cancer and HPV (p16)","Nasopharyngeal carcinoma","Hypopharyngeal cancer"]},
+ {name:"Head and neck oncology II",lead:[3,5],ref:"AJCC 8th; NCCN; ATA; Bailey's; Scott-Brown Vol 1 & 3",topics:["Neck dissection: classification and technique","Thyroid cancer: differentiated, medullary, anaplastic","Parathyroid disease and surgery","Salivary gland tumours","Radiotherapy, chemotherapy and reconstruction principles"]},
+ {name:"Paediatric ENT II and sleep",lead:[3,5],ref:"Scott-Brown Vol 2; Cummings (Pediatric, Sleep)",topics:["Cleft lip and palate, velopharyngeal insufficiency","Paediatric neck masses and vascular anomalies","Choanal atresia and congenital nasal masses","Adult OSA: polysomnography, CPAP and surgery","Syndromes in ENT: Down, Treacher Collins, CHARGE"]},
+ {name:"Imaging, evidence and exam skills",lead:[3,5],ref:"Scott-Brown Vol 1; Cummings (Imaging)",topics:["CT and MRI of the temporal bone","CT and MRI of the sinuses and skull base","Imaging of the neck and larynx","Evidence-based medicine and critical appraisal","Exam technique: MCQ, OSCE and viva"]}
+]};
+
+const ROTATIONS={
+1:[["ENT core: wards, clinics, emergency",6,"ent"],["General surgery",2,"ext"],["Anaesthesia and ICU",2,"ext"],["Emergency medicine",1,"ext"],["Audiology and vestibular unit",1,"sub"]],
+2:[["ENT core",8,"ent"],["Head and neck radiology",1,"ext"],["Neurosurgery",1,"ext"],["Plastic and maxillofacial surgery",1,"ext"],["Paediatric ENT",1,"sub"]],
+3:[["Otology",3,"sub"],["Rhinology",3,"sub"],["Laryngology and airway",3,"sub"],["Paediatric ENT",3,"sub"]],
+4:[["Head and neck surgery",3,"sub"],["Otology and neurotology",3,"sub"],["Rhinology and skull base",3,"sub"],["Elective or research",3,"res"]],
+5:[["Chief: head and neck oncology",4,"chief"],["Chief: otology",4,"chief"],["Chief: rhinology and facial plastics",4,"chief"]]
+};
+
+/* levels: 1 observe, 2 assist, 3 perform supervised, 4 independent. target = indicative minimum performed (S or I) by graduation */
+const PROCEDURES=[
+ ["Emergency and general",[
+  ["Microsuction and aural toilet",[3,4,4,4,4],50],
+  ["Removal of foreign body: ear and nose",[3,4,4,4,4],20],
+  ["Nasal cautery and packing",[4,4,4,4,4],30],
+  ["Drainage of peritonsillar abscess",[3,4,4,4,4],15],
+  ["Incision and drainage of neck abscess",[2,3,4,4,4],10],
+  ["Elective tracheostomy",[2,3,3,4,4],20],
+  ["Emergency surgical airway",[1,2,3,3,4],null]]],
+ ["Paediatric and pharynx",[
+  ["Adenoidectomy",[2,3,4,4,4],80],
+  ["Tonsillectomy",[2,3,4,4,4],100],
+  ["Myringotomy and ventilation tubes",[3,4,4,4,4],80],
+  ["Tongue-tie release",[3,4,4,4,4],10],
+  ["Direct laryngoscopy and bronchoscopy",[1,2,3,3,4],20],
+  ["Rigid oesophagoscopy and foreign body removal",[1,2,3,4,4],15]]],
+ ["Otology",[
+  ["Excision of preauricular sinus",[1,2,3,4,4],10],
+  ["Canalplasty and meatoplasty",[1,2,3,3,4],10],
+  ["Myringoplasty",[1,2,3,4,4],25],
+  ["Tympanoplasty",[1,2,2,3,4],20],
+  ["Cortical mastoidectomy",[1,2,3,4,4],15],
+  ["Mastoidectomy for cholesteatoma",[1,1,2,3,3],15],
+  ["Ossiculoplasty",[1,1,2,3,3],5],
+  ["Stapedotomy",[1,1,1,2,3],null],
+  ["Cochlear implantation",[1,1,1,2,2],null]]],
+ ["Rhinology",[
+  ["Inferior turbinate reduction",[3,4,4,4,4],40],
+  ["Reduction of nasal fracture",[3,4,4,4,4],20],
+  ["Septoplasty",[2,3,3,4,4],40],
+  ["Basic FESS: uncinectomy, middle meatal antrostomy",[1,2,3,4,4],30],
+  ["Comprehensive FESS",[1,1,2,3,4],20],
+  ["Sphenopalatine artery ligation",[1,1,2,3,4],5],
+  ["Endoscopic DCR",[1,1,2,3,3],5],
+  ["Septorhinoplasty",[1,1,1,2,3],5],
+  ["Endoscopic CSF leak repair",[1,1,1,2,2],null]]],
+ ["Laryngology",[
+  ["Microlaryngoscopy and biopsy",[2,3,4,4,4],40],
+  ["Microlaryngeal excision of benign lesions",[1,2,3,3,4],20],
+  ["Injection laryngoplasty",[1,1,2,3,3],5],
+  ["Transoral laser surgery",[1,1,2,3,3],5]]],
+ ["Head and neck",[
+  ["Panendoscopy for head and neck cancer",[1,2,3,4,4],20],
+  ["Excision biopsy of neck lymph node",[2,3,4,4,4],15],
+  ["Local skin flaps",[1,2,3,3,4],10],
+  ["Thyroglossal duct cyst (Sistrunk)",[1,2,2,3,4],5],
+  ["Branchial cyst excision",[1,2,2,3,4],5],
+  ["Submandibular gland excision",[1,2,2,3,4],8],
+  ["Hemithyroidectomy",[1,1,2,3,4],15],
+  ["Total thyroidectomy",[1,1,2,3,3],10],
+  ["Superficial parotidectomy",[1,1,2,3,3],8],
+  ["Selective neck dissection",[1,1,1,2,3],5],
+  ["Total laryngectomy",[1,1,1,2,2],null]]]
+];
+
+const FRAMEWORK={
+weekly:[
+ ["Every working day","07:30 ward round and handover led by the senior resident; consultant round on theatre and clinic days."],
+ ["Theatre days","Residents are allocated to lists by competency level. Juniors start and close; seniors perform the key steps under supervision. Every case goes in the logbook the same day."],
+ ["Clinic days","Juniors see new patients and present each case to the senior or consultant before discharge. Seniors run follow-up and pre-operative clinics."],
+ ["Academic day","Protected time. No elective lists for residents during the session. Attendance is recorded."],
+ ["On call","Rota of 1 in 4 to 1 in 5. Junior first on call, senior second, consultant third. Post-call rest is respected."]
+],
+assess:[
+ ["Mini-CEX","4 per year","Observed clinical encounter in clinic or ward."],
+ ["DOPS","6 per year","Observed procedure at the level expected for the year."],
+ ["Case-based discussion","4 per year","Structured discussion of a case the resident managed."],
+ ["Multi-source feedback","1 per year","Nurses, colleagues and consultants."],
+ ["Logbook review","Every 3 months","Numbers and roles checked against the year's targets."],
+ ["Supervisor meetings","Start, middle, end of year","Agree objectives, review progress, sign off."],
+ ["Annual review","End of year","Progression decision based on all of the above plus exam results."]
+],
+research:[
+ [1,"Research methods and good clinical practice course; join a departmental audit."],
+ [2,"Choose a research topic and supervisor; complete one audit cycle."],
+ [3,"Protocol written and ethics approval obtained."],
+ [4,"Data collection; present at a national or departmental meeting."],
+ [5,"Manuscript submitted or thesis completed before the final exam."]
+],
+courses:[
+ [1,"BLS and ACLS; basic surgical skills"],
+ [2,"Temporal bone dissection course; ATLS if available"],
+ [3,"FESS and endoscopic anatomy course"],
+ [4,"Head and neck dissection course; microsurgery skills"],
+ [5,"Final exam preparation course; leadership and teaching skills"]
+],
+exams:[
+ ["Board Part I","Usually during or after the 2nd year","Basic sciences and principles. Check current board regulations for timing and eligibility."],
+ ["Board Part II written","Final year","MCQ papers covering the full curriculum."],
+ ["Board Part II clinical","Final year, after the written","OSCE, clinical cases and viva."]
+]};
+
+const KEY="ent-program-v1";
+const DEF={name:"ENT Residency Program",start:null,cycle:"A",times:["12:00","12:45","13:45"],residents:[],skips:[],override:{},log:{},role:null,pinHash:null,pinSalt:null,viewPass:null,published:null};
+let VIEWER=false;
+let ST=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return Object.assign({},DEF)}})();
+function saveLocal(){if(VIEWER)return;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
+function save(){if(VIEWER)return;saveLocal();if(typeof pushLive==="function")pushLive()}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const dt=s=>new Date(s+"T00:00");
+const addD=(s,n)=>{const d=dt(s);d.setDate(d.getDate()+n);return iso(d)};
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],DAY=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const fd=s=>{const d=dt(s);return d.getDate()+" "+MON[d.getMonth()]};
+const fdy=s=>{const d=dt(s);return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear()};
+const today=()=>iso(new Date());
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("show"),2200)}
+if(!ST.log)ST.log={};
+if(!ST.start){const d=new Date();d.setDate(d.getDate()+((2-d.getDay()+7)%7||7));ST.start=iso(d);save()}
+const LV=["","Observe","Assist","Perform under supervision","Independent"],LS=["","O","A","S","I"];
+const resById=id=>ST.residents.find(r=>r.id===id);
+const sortedRes=()=>[...ST.residents].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
+
+/* ---------- schedule ---------- */
+function slots(){
+  const blocks=CURRICULUM[ST.cycle],out=[];
+  blocks.forEach((b,bi)=>{
+    b.topics.forEach((t,ti)=>out.push({kind:"lec",bi,ti,block:b,topic:t,quiz:ti===4}));
+    if(bi===3)out.push({kind:"exam",title:"Mid-year assessment",desc:"OSCE stations and viva for all residents on blocks 1–4. Supervisor mid-year meetings this week."});
+    if(bi===5)out.push({kind:"exam",title:"Mock board exams",desc:"R2: Part I mock (basic sciences). R5: Part II mock (written paper and viva). Others: progress test, 60 MCQs."});
+    if(bi===7)out.push({kind:"exam",title:"End-of-year exam",desc:"100 MCQs plus OSCE for all residents. Followed by annual reviews and logbook sign-off."});
+  });
+  let d=ST.start;const skips=new Set(ST.skips);let wk=0;
+  for(const s of out){while(skips.has(d))d=addD(d,7);s.date=d;s.week=++wk;s.key=ST.cycle+"|"+(s.kind==="lec"?s.bi+"-"+s.ti:s.title);d=addD(d,7)}
+  assign(out);return out;
+}
+function rr(pool,i){return pool.length?pool[i%pool.length]:null}
+function assign(out){
+  const all=sortedRes();let ci=0,li=0,ji=0,mi=0;
+  for(const s of out){
+    s.items=[];
+    if(s.kind!=="lec"){s.items.push({tm:ST.times[0],what:s.title,who:s.desc,cls:"quiz"});continue}
+    const lecN=s.bi*5+s.ti;
+    let first;
+    if(lecN%4===0){const pool=all.filter(r=>r.level>=3);first={role:"jc",what:"Journal club",who:rr(pool.length?pool:all,ji++)}}
+    else if(lecN%4===2){const pool=all.filter(r=>r.level>=4);first={role:"mm",what:"Morbidity and mortality meeting",who:rr(pool.length?pool:all,mi++)}}
+    else first={role:"case",what:"Case presentation",who:rr(all,ci++)};
+    const [lo,hi]=s.block.lead;let pool=all.filter(r=>r.level>=lo&&r.level<=hi);if(!pool.length)pool=all;
+    const lec={role:"lec",what:s.topic,who:rr(pool,li++),ref:s.block.ref};
+    [first,lec].forEach(it=>{const ov=ST.override[s.key+"|"+it.role];if(ov&&resById(ov))it.who=resById(ov)});
+    s.items.push({tm:ST.times[0],what:first.what,who:first.who?first.who.name+" (R"+first.who.level+")":"Assign a resident",role:first.role,rid:first.who&&first.who.id});
+    s.items.push({tm:ST.times[1],what:lec.what,who:(lec.who?"Presenter: "+lec.who.name+" (R"+lec.who.level+"), consultant facilitator":"Consultant lecture")+"<br><span class='note'>Reading: "+esc(lec.ref)+"</span>",role:"lec",rid:lec.who&&lec.who.id,raw:true});
+    if(s.quiz)s.items.push({tm:ST.times[2],what:"Block quiz: "+s.block.name,who:"40 MCQs on this block, 45 minutes, reviewed together afterwards",cls:"quiz"});
+    else s.items.push({tm:ST.times[2],what:lecN%2?"Image and audiogram review":"Instrument and OSCE station practice",who:"Seniors lead, juniors answer"});
+  }
+}
+/* ---------- rotations ---------- */
+function rotFor(r){
+  const peers=sortedRes().filter(x=>x.level===r.level);const j=Math.max(0,peers.findIndex(x=>x.id===r.id));
+  const plan=ROTATIONS[r.level]||[];const sh=plan.length?j%plan.length:0;const order=plan.slice(sh).concat(plan.slice(0,sh));
+  const months=[];order.forEach(([n,m,c])=>{for(let k=0;k<m;k++)months.push({n,c})});return months.slice(0,12);
+}
+function monthIndex(dateS){const s=dt(ST.start),d=dt(dateS);return (d.getFullYear()-s.getFullYear())*12+d.getMonth()-s.getMonth()}
+function monthLabel(i){const s=dt(ST.start);const d=new Date(s.getFullYear(),s.getMonth()+i,1);return MON[d.getMonth()]+" "+String(d.getFullYear()).slice(2)}
+
+/* ---------- views ---------- */
+let TAB=location.hash.slice(1)||"week";
+function go(t){TAB=t;location.hash=t;render()}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
+window.addEventListener("hashchange",()=>{TAB=location.hash.slice(1)||"week";render()});
+function render(){
+  $("#pname").innerHTML=esc(ST.name)+(VIEWER?'<span class="viewer-tag">view only</span>':"");
+  const S=slots();
+  $("#psub").textContent=`Academic year from ${fdy(ST.start)}, curriculum cycle ${ST.cycle}, ${ST.residents.length} resident${ST.residents.length===1?"":"s"}, academic day on ${DAY[dt(ST.start).getDay()]}s`;
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===TAB));
+  if(VIEWER&&!["week","lectures","quizzes"].includes(TAB))TAB="week";
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.style.display=VIEWER&&!["week","lectures","quizzes"].includes(b.dataset.t)?"none":"");
+  const V={week:vWeek,lectures:vLectures,quizzes:vQuizzes,ops:vOps,rot:vRot,frame:vFrame,report:vReport,res:vRes}[TAB]||vWeek;
+  $("#view").innerHTML=V(S);bind();window.scrollTo(0,0);
+}
+function sessionCard(s){
+  const d=dt(s.date);
+  return `<div class="session"><div class="date"><b class="num">${d.getDate()}</b><span>${MON[d.getMonth()]} ${d.getFullYear()}, ${DAY[d.getDay()]}</span><span>Week ${s.week}${s.kind==="lec"?", block "+(s.bi+1):""}</span></div><ol>${s.items.map(it=>`<li class="${it.cls||""}"><span class="tm num">${it.tm}</span><span class="what">${esc(it.what)}</span><span class="who">${it.raw?it.who:esc(it.who)}</span></li>`).join("")}</ol></div>`;
+}
+function vWeek(S){
+  const t=today();const next=S.find(s=>s.date>=t);
+  const nextQuiz=S.find(s=>s.date>=t&&(s.quiz||s.kind==="exam"));
+  const mi=monthIndex(t);
+  let h=`<h2>${next?(next.date===t?"Today's academic session":"Next academic session"):"The academic year has finished"}</h2>`;
+  if(next){h+=sessionCard(next)+`<div class="row noprint" style="margin-top:10px"><button class="btn p" data-share="${next.key}">${VIEWER?"Share":"Share with residents"}</button>${VIEWER?"":`<button class="btn" data-skip="${next.date}">Postpone this session one week</button>`}</div>`}
+  else h+=`<div class="empty">Set a new academic year start date in Residents & settings.</div>`;
+  h+=`<div class="grid2" style="margin-top:18px"><div class="panel"><h3 style="margin-top:0">Coming up</h3>`;
+  const up=S.filter(s=>s.date>(next?next.date:t)).slice(0,4);
+  h+=up.length?up.map(s=>`<div class="kv"><span>${fd(s.date)}</span><span>${esc(s.kind==="lec"?s.topic:s.title)}</span></div>`).join(""):'<p class="note">Nothing scheduled.</p>';
+  if(nextQuiz)h+=`<p class="note" style="margin-bottom:0">Next assessment: <b>${esc(nextQuiz.kind==="exam"?nextQuiz.title:"Block quiz, "+nextQuiz.block.name)}</b> on ${fdy(nextQuiz.date)}.</p>`;
+  if(VIEWER){h+=`</div></div>`;h+=`<p class="note noprint" style="margin-top:16px">${LIVE&&LIVE.user?"Signed in as "+esc(LIVE.user.email)+". ":""}<button class="btn sm" id="signout">Sign out</button></p>`;return h}
+  h+=`</div><div class="panel"><h3 style="margin-top:0">Where residents are this month</h3>`;
+  h+=ST.residents.length?sortedRes().map(r=>{const m=(mi>=0&&mi<12)?rotFor(r)[mi]:null;return `<div class="kv"><span>${esc(r.name)} <span class="lvl" style="min-width:28px;height:20px;font-size:.72rem">R${r.level}</span></span><span>${m?esc(m.n):"Outside this academic year"}</span></div>`}).join(""):`<p class="note">Add residents in <a href="#res">Residents & settings</a> to see presenters and rotations.</p>`;
+  h+=`</div></div>`;
+  return h;
+}
+function vLectures(S){
+  const t=today();
+  let h=`<h2>Academic sessions, cycle ${ST.cycle}</h2><p class="lead">Eight blocks of five weeks. Each session has a resident-led first slot (case presentation, journal club or M&M), a core topic and a practice or quiz slot. Cycle A and cycle B alternate each year, so every resident covers the whole curriculum twice in five years.</p>
+  <div class="row noprint" style="margin-bottom:14px"><button class="btn" data-csv="lectures">Export to Excel</button><button class="btn" onclick="window.print()">Print</button></div>`;
+  const opts=(sel,role)=>`<option value="">Auto</option>`+sortedRes().map(r=>`<option value="${r.id}" ${sel===r.id?"selected":""}>${esc(r.name)} R${r.level}</option>`).join("");
+  let cur=-2;
+  S.forEach(s=>{
+    if(s.kind==="lec"&&s.bi!==cur){if(cur!==-2)h+=`</div></div>`;cur=s.bi;h+=`<div class="block"><div class="bh"><h3>Block ${s.bi+1}: ${esc(s.block.name)}</h3><small>${esc(s.block.ref)}</small></div><div class="panel">`}
+    if(s.kind==="exam"){h+=`</div></div><div class="block"><div class="panel"><div class="lec special ${s.date<t?"past":""}"><div class="d num">${fd(s.date)}<small>Week ${s.week}</small></div><div><div class="t">${esc(s.title)}</div><div class="s">${esc(s.desc)}</div>${s.date<=t&&!VIEWER?`<div class="s">${statusTxt(s)}</div>`:""}<div class="noprint" style="margin-top:6px">${s.date<=t&&!VIEWER?`<button class="btn sm" data-rec="${s.key}">Record attendance</button> `:""}${!VIEWER&&s.date>=t?`<button class="btn sm" data-skip="${s.date}">Postpone</button>`:""}</div></div></div>`;cur=-1;return}
+    const first=s.items[0],lec=s.items[1];
+    h+=`<div class="lec ${s.date<t?"past":""}"><div class="d num">${fd(s.date)}<small>Week ${s.week}</small></div><div><div class="t">${esc(s.topic)}</div>
+    <div class="s">${esc(first.what)}: <select class="noprint" ${VIEWER?"hidden":""} data-ov="${s.key}|${first.role}">${opts(ST.override[s.key+"|"+first.role],first.role)}</select><span class="pr"> ${esc(first.who)}</span></div>
+    <div class="s">Core topic presenter: <select class="noprint" ${VIEWER?"hidden":""} data-ov="${s.key}|lec">${opts(ST.override[s.key+"|lec"])}</select><span class="pr"> ${lec.rid?esc(resById(lec.rid).name):"Consultant"}</span></div>
+    ${s.quiz?`<div class="s" style="color:var(--warn);font-weight:600">Block quiz in this session</div>`:""}
+    ${s.date<=t&&!VIEWER?`<div class="s">${statusTxt(s)}</div>`:""}
+    <div class="noprint" style="margin-top:6px">${s.date<=t&&!VIEWER?`<button class="btn sm" data-rec="${s.key}">Record attendance</button> `:""}${!VIEWER&&s.date>=t?`<button class="btn sm" data-skip="${s.date}">Postpone</button>`:""}</div></div></div>`;
+  });
+  h+=`</div></div>`;
+  if(ST.skips.length)h+=`<p class="note">Postponed weeks: ${ST.skips.slice().sort().map(fd).join(", ")}. Restore them in Residents & settings.</p>`;
+  return h;
+}
+function vQuizzes(S){
+  const t=today();
+  let h=`<h2>Quizzes and exams</h2><p class="lead">A 40-question MCQ quiz closes every block. Three larger assessments sit between blocks. Questions come from the block's topics and its reading list.</p>`;
+  h+=`<div class="panel">`+S.filter(s=>s.quiz||s.kind==="exam").map(s=>`<div class="quiz ${s.date<t?"past":""}" style="${s.date<t?"opacity:.55":""}"><div class="num" style="font-weight:600">${fd(s.date)}<div class="note">Week ${s.week}</div></div><div>${s.kind==="exam"?`<div class="t">${esc(s.title)}<span class="tag">Exam week</span></div><div class="s">${esc(s.desc)}</div>`:`<div class="t">Block ${s.bi+1} quiz: ${esc(s.block.name)}</div><div class="s">${s.block.topics.map(esc).join("; ")}</div><div class="s">40 MCQs, 45 minutes. Reading: ${esc(s.block.ref)}</div>`}</div></div>`).join("")+`</div>`;
+  h+=`<h3>How quizzes run</h3><div class="panel"><div class="kv"><span>Format</span><span>Single best answer MCQs, closed book</span></div><div class="kv"><span>Pass mark</span><span>60%; below that, a short remediation plan with the supervisor</span></div><div class="kv"><span>Review</span><span>Answers discussed in the same session</span></div><div class="kv"><span>Records</span><span>Scores feed into the annual review</span></div></div>`;
+  return h;
+}
+let OPSY=0;
+function vOps(){
+  let h=`<h2>Operative levels by year</h2><p class="lead">The level each resident is expected to reach by the end of each year, and an indicative minimum number performed (supervised or independent) by graduation. Adjust the numbers to the board's logbook requirements.</p>
+  <div class="legend">${[1,2,3,4].map(l=>`<span><i class="L${l}">${LS[l]}</i>${LV[l]}</span>`).join("")}</div>
+  <div class="chips noprint">${[0,1,2,3,4,5].map(y=>`<button data-opsy="${y}" aria-pressed="${OPSY===y}">${y?"R"+y:"All years"}</button>`).join("")}</div>
+  <div class="panel" style="overflow-x:auto"><table class="mx"><thead><tr><th>Procedure</th>${[1,2,3,4,5].map(y=>`<th>R${y}</th>`).join("")}<th style="text-align:right">Target</th></tr></thead><tbody>`;
+  PROCEDURES.forEach(([g,ps])=>{h+=`<tr class="grp"><td colspan="7">${esc(g)}</td></tr>`;ps.forEach(([n,lv,tg])=>{h+=`<tr><td class="p">${esc(n)}</td>${lv.map((l,i)=>`<td class="c"><i class="L${l} ${OPSY&&OPSY!==i+1?"dim":""}" title="R${i+1}: ${LV[l]}">${LS[l]}</i></td>`).join("")}<td class="tg num">${tg||"—"}</td></tr>`})});
+  h+=`</tbody></table></div>`;
+  if(OPSY){const perf=[],ind=[];PROCEDURES.forEach(([g,ps])=>ps.forEach(([n,lv])=>{if(lv[OPSY-1]===3)perf.push(n);if(lv[OPSY-1]===4)ind.push(n)}));
+    h+=`<div class="grid2" style="margin-top:14px"><div class="panel"><h3 style="margin-top:0">R${OPSY} performs under supervision</h3><p class="note">${perf.map(esc).join("; ")||"None"}</p></div><div class="panel"><h3 style="margin-top:0">R${OPSY} performs independently</h3><p class="note">${ind.map(esc).join("; ")||"None"}</p></div></div>`}
+  return h;
+}
+function vRot(){
+  let h=`<h2>Rotations</h2><p class="lead">Twelve-month plan for each year. Residents in the same year start their blocks in a different order, so services are never left without a resident and no one rotation is crowded.</p><h3>Plan by year</h3><div class="plan">`;
+  [1,2,3,4,5].forEach(y=>{h+=`<div class="yr"><b>R${y}</b><div class="bar" style="margin-top:4px">${ROTATIONS[y].map(([n,m,c])=>`<div class="c-${c}" style="flex:${m}">${esc(n)}<small>${m} month${m>1?"s":""}</small></div>`).join("")}</div></div>`});
+  h+=`</div><h3>Residents, month by month</h3>`;
+  if(!ST.residents.length)return h+`<div class="empty">Add residents in Residents & settings to see the month-by-month rota.</div>`;
+  const mi=monthIndex(today());
+  h+=`<div class="panel rgrid"><table class="rt"><thead><tr><th class="n">Resident</th>${Array.from({length:12},(_,i)=>`<th style="${i===mi?"color:var(--act)":""}">${monthLabel(i)}</th>`).join("")}</tr></thead><tbody>`;
+  sortedRes().forEach(r=>{const ms=rotFor(r);let cells="",k=0;while(k<ms.length){let j=k;while(j+1<ms.length&&ms[j+1].n===ms[k].n)j++;cells+=`<td colspan="${j-k+1}" class="c-${ms[k].c}">${esc(ms[k].n)}</td>`;k=j+1}
+    h+=`<tr><th class="n">${esc(r.name)} <span class="note">R${r.level}</span></th>${cells}</tr>`});
+  h+=`</tbody></table></div><div class="legend" style="margin-top:10px"><span><i class="c-ent"></i>ENT core</span><span><i class="c-sub"></i>ENT subspecialty</span><span><i class="c-ext"></i>Outside ENT</span><span><i class="c-res"></i>Elective or research</span><span><i class="c-chief"></i>Chief resident</span></div>
+  <div class="row noprint"><button class="btn" data-csv="rot">Export to Excel</button><button class="btn" onclick="window.print()">Print</button></div>`;
+  return h;
+}
+function vFrame(){
+  let h=`<h2>Training framework</h2><p class="lead">The weekly pattern, assessments, research, courses and exams that run alongside the academic sessions.</p>`;
+  h+=`<h3>Weekly pattern</h3><div class="panel">${FRAMEWORK.weekly.map(([a,b])=>`<div class="kv" style="display:block"><span style="display:block">${esc(a)}</span><span style="text-align:left;display:block">${esc(b)}</span></div>`).join("")}</div>`;
+  h+=`<h3>Workplace-based assessments</h3><div class="panel" style="overflow-x:auto"><table class="mx" style="border-spacing:0"><thead><tr><th>Assessment</th><th style="text-align:left">How often</th><th style="text-align:left">What</th></tr></thead><tbody>${FRAMEWORK.assess.map(([a,b,c])=>`<tr><td class="p" style="border-top:1px solid var(--line)">${esc(a)}</td><td style="border-top:1px solid var(--line);padding:6px 8px 6px 0">${esc(b)}</td><td style="border-top:1px solid var(--line);padding:6px 0;color:var(--muted)">${esc(c)}</td></tr>`).join("")}</tbody></table></div>`;
+  h+=`<div class="grid2" style="margin-top:6px"><div><h3>Research milestones</h3><div class="panel">${FRAMEWORK.research.map(([y,t])=>`<div class="kv" style="justify-content:flex-start"><span class="lvl">R${y}</span><span style="text-align:left">${esc(t)}</span></div>`).join("")}</div></div>
+  <div><h3>Courses</h3><div class="panel">${FRAMEWORK.courses.map(([y,t])=>`<div class="kv" style="justify-content:flex-start"><span class="lvl">R${y}</span><span style="text-align:left">${esc(t)}</span></div>`).join("")}</div></div></div>`;
+  h+=`<h3>Board exams</h3><div class="panel">${FRAMEWORK.exams.map(([a,b,c])=>`<div class="kv" style="display:block"><span style="display:block">${esc(a)} <span class="tag">${esc(b)}</span></span><span style="display:block;text-align:left">${esc(c)}</span></div>`).join("")}</div>`;
+  h+=`<h3>Logbook</h3><div class="panel note">Every case is logged the same day with the resident's role: observed, assisted, performed under supervision or independent. The supervising consultant signs the logbook monthly; numbers are reviewed every three months against the targets in Operative levels.</div>`;
+  return h;
+}
+function vRes(S){
+  const t=today(),mi=monthIndex(t);
+  let h=`<h2>Residents</h2><div class="panel noprint"><div class="row" style="align-items:flex-end"><label class="f" style="flex:2;min-width:180px;margin:0"><span>Name</span><input id="rn" placeholder="Dr. …"></label><label class="f" style="flex:1;min-width:90px;margin:0"><span>Year</span><select id="rl">${[1,2,3,4,5].map(y=>`<option value="${y}">R${y}</option>`).join("")}</select></label><button class="btn p" id="radd">Add resident</button></div></div>`;
+  if(!ST.residents.length)h+=`<div class="empty" style="margin-top:12px">No residents yet. Add each resident with their year; presenters and rotations fill in automatically.</div>`;
+  else{h+=`<div class="panel" style="margin-top:12px">`+sortedRes().map(r=>{
+      const mine=S.filter(s=>s.date>=t&&s.items&&s.items.some(it=>it.rid===r.id)).slice(0,3);const m=(mi>=0&&mi<12)?rotFor(r)[mi]:null;
+      const perf=[];PROCEDURES.forEach(([g,ps])=>ps.forEach(([n,lv])=>{if(lv[r.level-1]>=3&&(r.level===1||lv[r.level-2]<lv[r.level-1]))perf.push(n)}));
+      return `<div class="res-card"><div class="row"><span class="lvl">R${r.level}</span><b style="flex:1">${esc(r.name)}</b><select class="noprint" data-lvl="${r.id}" aria-label="Change year">${[1,2,3,4,5].map(y=>`<option value="${y}" ${y===r.level?"selected":""}>R${y}</option>`).join("")}</select><button class="btn sm d noprint" data-del="${r.id}">Remove</button></div>
+      <div class="note" style="margin-top:6px"><b>This month:</b> ${m?esc(m.n):"outside this academic year"}</div>
+      <div class="note"><b>Presenting next:</b> ${mine.length?mine.map(s=>fd(s.date)+" ("+esc(s.items.find(it=>it.rid===r.id).what)+")").join("; "):"nothing scheduled"}</div>
+      <div class="note"><b>New this year in theatre:</b> ${perf.map(esc).join("; ")||"consolidation of previous levels"}</div></div>`}).join("")+`</div>`;}
+  h+=`<p class="note">Promote everyone one year at the start of each academic year with the button below.</p><div class="row noprint"><button class="btn" id="promote">Promote all residents one year</button></div>`;
+  h+=`<h2>Settings</h2><div class="panel noprint"><label class="f"><span>Program name</span><input id="sname" value="${esc(ST.name)}"></label>
+  <div class="row"><label class="f" style="flex:1;min-width:160px"><span>First academic session (sets the weekday)</span><input type="date" id="sstart" value="${ST.start}"></label><label class="f" style="flex:1;min-width:140px"><span>Curriculum cycle this year</span><select id="scycle"><option value="A" ${ST.cycle==="A"?"selected":""}>Cycle A (foundations)</option><option value="B" ${ST.cycle==="B"?"selected":""}>Cycle B (advanced)</option></select></label></div>
+  <div class="row"><label class="f" style="flex:1"><span>First slot</span><input type="time" id="t0" value="${ST.times[0]}"></label><label class="f" style="flex:1"><span>Core topic</span><input type="time" id="t1" value="${ST.times[1]}"></label><label class="f" style="flex:1"><span>Practice or quiz</span><input type="time" id="t2" value="${ST.times[2]}"></label></div>
+  <button class="btn p" id="ssave">Save settings</button>
+  ${ST.skips.length?`<h3>Postponed weeks</h3>${ST.skips.slice().sort().map(d=>`<div class="kv"><span>${fdy(d)}</span><span><button class="btn sm" data-unskip="${d}">Restore</button></span></div>`).join("")}`:""}
+  <h3>Backup</h3><div class="row"><button class="btn" id="bexp">Export program data</button><label class="btn">Import data<input type="file" id="bimp" accept=".json" hidden></label></div>
+  <p class="note">Everything is stored on this device. Export a copy before changing phones.</p></div>`+accessPanel();
+  return h;
+}
+/* ---------- events ---------- */
+function bind(){
+  const v=$("#view");
+  v.querySelectorAll("[data-rec]").forEach(b=>b.onclick=()=>recordSheet(b.dataset.rec));
+  bindReport();bindAccess();
+  v.querySelectorAll("[data-skip]").forEach(b=>b.onclick=()=>{if(!ST.skips.includes(b.dataset.skip))ST.skips.push(b.dataset.skip);save();toast("Postponed: everything after it moves one week");render()});
+  v.querySelectorAll("[data-unskip]").forEach(b=>b.onclick=()=>{ST.skips=ST.skips.filter(d=>d!==b.dataset.unskip);save();render()});
+  v.querySelectorAll("[data-ov]").forEach(s=>s.onchange=()=>{if(s.value)ST.override[s.dataset.ov]=s.value;else delete ST.override[s.dataset.ov];save();render()});
+  v.querySelectorAll("[data-opsy]").forEach(b=>b.onclick=()=>{OPSY=+b.dataset.opsy;render()});
+  v.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>shareSession(b.dataset.share));
+  v.querySelectorAll("[data-csv]").forEach(b=>b.onclick=()=>exportCSV(b.dataset.csv));
+  v.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const r=resById(b.dataset.del);if(confirm("Remove "+r.name+"?")){ST.residents=ST.residents.filter(x=>x.id!==r.id);save();render()}});
+  v.querySelectorAll("[data-lvl]").forEach(s=>s.onchange=()=>{resById(s.dataset.lvl).level=+s.value;save();render()});
+  const add=$("#radd");if(add)add.onclick=()=>{const n=$("#rn").value.trim();if(!n){$("#rn").focus();return}ST.residents.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:n,level:+$("#rl").value});save();toast("Added "+n);render()};
+  const rn=$("#rn");if(rn)rn.onkeydown=e=>{if(e.key==="Enter")add.click()};
+  const pr=$("#promote");if(pr)pr.onclick=()=>{const grads=ST.residents.filter(r=>r.level===5);if(!confirm("Move every resident up one year?"+(grads.length?"\n\nR5 residents ("+grads.map(r=>r.name).join(", ")+") will be removed as graduates.":"")))return;ST.residents=ST.residents.filter(r=>r.level<5).map(r=>Object.assign(r,{level:r.level+1}));ST.override={};save();toast("Promoted");render()};
+  const ss=$("#ssave");if(ss)ss.onclick=()=>{ST.name=$("#sname").value.trim()||DEF.name;if($("#sstart").value&&$("#sstart").value!==ST.start){ST.start=$("#sstart").value;ST.skips=[];ST.override={}}ST.cycle=$("#scycle").value;ST.times=[$("#t0").value||"12:00",$("#t1").value||"12:45",$("#t2").value||"13:45"];save();toast("Settings saved");render()};
+  const be=$("#bexp");if(be)be.onclick=()=>download(new Blob([JSON.stringify(ST,null,1)],{type:"application/json"}),"ent-program-"+today()+".json");
+  const bi=$("#bimp");if(bi)bi.onchange=async()=>{try{const d=JSON.parse(await bi.files[0].text());if(!Array.isArray(d.residents))throw 0;ST=Object.assign({},DEF,d);save();toast("Data imported");render()}catch(e){toast("That file is not a program export")}};
+}
+function download(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove()}
+async function shareSession(key){
+  const s=slots().find(x=>x.key===key);if(!s)return;const d=dt(s.date);
+  const txt=`${ST.name}\nAcademic session: ${DAY[d.getDay()]} ${fdy(s.date)}\n\n`+s.items.map(it=>`${it.tm}  ${it.what}\n       ${String(it.who).replace(/<br>/g,"\n       ").replace(/<[^>]+>/g,"")}`).join("\n\n");
+  try{if(navigator.share){await navigator.share({text:txt});return}}catch(e){if(e.name==="AbortError")return}
+  try{await navigator.clipboard.writeText(txt);toast("Copied — paste it in the residents' group")}catch(e){prompt("Copy:",txt)}
+}
+function csv(rows){return "\ufeff"+rows.map(r=>r.map(c=>{c=String(c??"").replace(/<[^>]+>/g," ");return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(",")).join("\r\n")}
+function exportCSV(kind){
+  if(kind==="lectures"){const rows=[["Week","Date","Block","Session","First slot","First slot presenter","Core topic","Core presenter","Third slot","Reading"]];
+    slots().forEach(s=>{if(s.kind==="exam")rows.push([s.week,s.date,"",s.title,"","","","",s.desc,""]);else rows.push([s.week,s.date,s.bi+1,s.block.name,s.items[0].what,s.items[0].who,s.topic,s.items[1].rid?resById(s.items[1].rid).name:"Consultant",s.items[2].what,s.block.ref])});
+    download(new Blob([csv(rows)],{type:"text/csv"}),"academic-sessions-"+ST.cycle+".csv")}
+  else{const rows=[["Resident","Year",...Array.from({length:12},(_,i)=>monthLabel(i))]];sortedRes().forEach(r=>rows.push([r.name,"R"+r.level,...rotFor(r).map(m=>m.n)]));download(new Blob([csv(rows)],{type:"text/csv"}),"rotations.csv")}
+}
+/* ================= session log ================= */
+function statusTxt(s){const L=ST.log[s.key];if(!L)return '<span class="st-none">Not recorded yet</span>';
+  if(L.status==="cancelled")return '<span class="st-cancel">Did not take place</span>'+(L.notes?" — "+esc(L.notes):"");
+  const n=(L.att||[]).length,t=ST.residents.length;return `<span class="st-held">Held</span>, attendance ${n}/${t}`+(L.notes?" — "+esc(L.notes):"")}
+const isAssess=s=>s.kind==="exam"||s.quiz;
+function openSheet(h){$("#sheet").innerHTML=h;$("#scrim").classList.add("open")}
+function closeSheet(){$("#scrim").classList.remove("open");$("#sheet").innerHTML=""}
+document.addEventListener("click",e=>{if(e.target.id==="scrim")closeSheet()});
+function recordSheet(key){
+  const s=slots().find(x=>x.key===key);if(!s)return;const L=ST.log[key]||{};const res=sortedRes();
+  const held=L.status!=="cancelled";const att=new Set(L.att||res.map(r=>r.id));const sc=L.scores||{};
+  const opt=(role,cur)=>`<option value="">Auto (${esc(cur||"—")})</option>`+res.map(r=>`<option value="${r.id}" ${ST.override[key+"|"+role]===r.id?"selected":""}>${esc(r.name)} R${r.level}</option>`).join("");
+  openSheet(`<h3>${fdy(s.date)}</h3><div class="note">${esc(s.kind==="lec"?s.topic:s.title)}</div>
+  <div class="seg" id="stseg"><button data-v="held" class="${held?"on":""}">Held</button><button data-v="cancelled" class="${held?"":"on"}">Did not take place</button></div>
+  <div id="heldbox" ${held?"":"hidden"}>
+   ${s.kind==="lec"?`<label class="f"><span>${esc(s.items[0].what)} presented by</span><select id="r0">${opt(s.items[0].role,s.items[0].who)}</select></label><label class="f"><span>Core topic presented by</span><select id="r1">${opt("lec",s.items[1].rid?resById(s.items[1].rid).name:"Consultant")}</select></label>`:""}
+   <h3 style="margin-top:12px">Attendance${isAssess(s)?" and scores (%)":""}</h3>
+   ${res.length?`<div class="panel attl">${res.map(r=>`<label><input type="checkbox" data-att="${r.id}" ${att.has(r.id)?"checked":""}> ${esc(r.name)} <span class="note">R${r.level}</span>${isAssess(s)?`<input type="number" min="0" max="100" data-sc="${r.id}" value="${sc[r.id]??""}" placeholder="%">`:""}</label>`).join("")}</div>`:`<p class="note">Add residents first.</p>`}
+  </div>
+  <label class="f" style="margin-top:12px"><span>Notes</span><input id="rnotes" value="${esc(L.notes||"")}" placeholder="${held?"e.g. guest lecturer, topic changed":"Reason, e.g. public holiday, power cut"}"></label>
+  <div class="row"><button class="btn p" id="rsave">Save</button><button class="btn" id="rcancel">Cancel</button>${ST.log[key]?'<button class="btn d" id="rclear">Clear record</button>':""}</div>`);
+  let st=held?"held":"cancelled";
+  document.querySelectorAll("#stseg button").forEach(b=>b.onclick=()=>{st=b.dataset.v;document.querySelectorAll("#stseg button").forEach(x=>x.classList.toggle("on",x===b));$("#heldbox").hidden=st!=="held"});
+  $("#rcancel").onclick=closeSheet;
+  if($("#rclear"))$("#rclear").onclick=()=>{delete ST.log[key];save();closeSheet();render()};
+  $("#rsave").onclick=()=>{
+    const rec={status:st,notes:$("#rnotes").value.trim(),ts:Date.now()};
+    if(st==="held"){rec.att=[...document.querySelectorAll("[data-att]")].filter(c=>c.checked).map(c=>c.dataset.att);
+      const scores={};document.querySelectorAll("[data-sc]").forEach(i=>{if(i.value!=="")scores[i.dataset.sc]=Math.max(0,Math.min(100,+i.value))});if(Object.keys(scores).length)rec.scores=scores;
+      if(s.kind==="lec"){[["r0",s.items[0].role],["r1","lec"]].forEach(([id,role])=>{const v=$("#"+id).value;if(v)ST.override[key+"|"+role]=v;else delete ST.override[key+"|"+role]})}}
+    ST.log[key]=rec;save();closeSheet();toast("Saved");render()};
+}
+/* ================= reports ================= */
+let REP=null;
+function monthRange(off){const d=new Date();const a=new Date(d.getFullYear(),d.getMonth()+off,1),b=new Date(d.getFullYear(),d.getMonth()+off+1,0);return [iso(a),iso(b)]}
+function reportData(a,b){
+  const t=today(),res=sortedRes(),S=slots().filter(s=>s.date>=a&&s.date<=b);
+  const ROLE={case:"Case presentation",jc:"Journal club",mm:"M&M",lec:"Core lecture"};
+  const per=Object.fromEntries(res.map(r=>[r.id,{r,case:0,jc:0,mm:0,lec:0,att:0,heldN:0,scores:[]}]));
+  let held=0,cancelled=0,unrec=0,upcoming=0;
+  const rows=S.map(s=>{const L=ST.log[s.key];let status=L?L.status:(s.date>t?"upcoming":"none");
+    if(status==="held")held++;else if(status==="cancelled")cancelled++;else if(status==="upcoming")upcoming++;else unrec++;
+    if(status==="held"){res.forEach(r=>{per[r.id].heldN++;if((L.att||[]).includes(r.id))per[r.id].att++});
+      (s.items||[]).forEach(it=>{if(it.rid&&per[it.rid]&&it.role&&per[it.rid][it.role]!=null)per[it.rid][it.role]++});
+      if(L.scores)Object.entries(L.scores).forEach(([id,v])=>{if(per[id])per[id].scores.push(v)})}
+    const first=s.kind==="lec"?s.items[0]:null,lec=s.kind==="lec"?s.items[1]:null;
+    return {date:s.date,week:s.week,block:s.kind==="lec"?s.bi+1:"",title:s.kind==="lec"?s.topic:s.title,
+      firstType:first?first.what:"",firstBy:first&&first.rid?resById(first.rid).name:"",
+      coreBy:lec?(lec.rid?resById(lec.rid).name:"Consultant"):"",quiz:isAssess(s)?(s.kind==="exam"?s.title:"Block quiz"):"",
+      status,att:L&&L.status==="held"?(L.att||[]).length:"",notes:L?L.notes||"":"",key:s.key,s}});
+  const quizzes=rows.filter(x=>x.quiz&&x.status==="held");
+  const skips=ST.skips.filter(d=>d>=a&&d<=b).sort();
+  const m0=Math.max(0,monthIndex(a)),m1=Math.min(11,monthIndex(b));
+  const rot=res.map(r=>{const ms=rotFor(r);const names=[];for(let i=m0;i<=m1;i++){if(ms[i]&&!names.includes(ms[i].n))names.push(ms[i].n)}return {r,names}});
+  return {a,b,rows,per:Object.values(per),held,cancelled,unrec,upcoming,quizzes,skips,rot,res,ROLE};
+}
+const stLabel={held:"Held",cancelled:"Did not take place",none:"Not recorded",upcoming:"Upcoming"};
+const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):"";
+function vReport(){
+  if(!REP){const [a,b]=monthRange(0);REP={a,b,mode:"this"}}
+  const D=reportData(REP.a,REP.b);const pct=p=>p.heldN?Math.round(p.att/p.heldN*100)+"%":"—";
+  let h=`<h2>Department report</h2><p class="lead noprint">Pick a period, check it on screen, then export it as Excel or save it as PDF.</p>
+  <div class="chips noprint">${[["this","This month"],["last","Last month"],["year","Whole academic year"],["custom","Custom"]].map(([k,l])=>`<button data-rp="${k}" aria-pressed="${REP.mode===k}">${l}</button>`).join("")}</div>
+  <div class="row noprint" ${REP.mode==="custom"?"":"hidden"} style="margin-bottom:12px"><label class="f" style="margin:0"><span>From</span><input type="date" id="ra" value="${REP.a}"></label><label class="f" style="margin:0"><span>To</span><input type="date" id="rb" value="${REP.b}"></label><button class="btn" id="rgo" style="align-self:flex-end">Show</button></div>
+  <div class="row noprint" style="margin-bottom:6px"><button class="btn p" id="xls">Export Excel</button><button class="btn" onclick="window.print()">Save as PDF / Print</button><span class="note" id="xst"></span></div>
+  <div class="panel"><b style="font-size:1.1rem">${esc(ST.name)}</b><div class="note">Report period: ${fdy(D.a)} to ${fdy(D.b)}. Generated ${fdy(today())}.</div>
+  <div class="kpis"><div><b>${D.rows.length}</b><span>Sessions scheduled</span></div><div><b>${D.held}</b><span>Held</span></div><div><b>${D.cancelled}</b><span>Did not take place</span></div><div><b>${D.quizzes.length}</b><span>Quizzes and exams held</span></div></div>
+  ${D.unrec?`<p class="note" style="margin:0">${D.unrec} past session${D.unrec>1?"s are":" is"} not recorded yet${VIEWER?"":". Record them from the Lectures tab for a complete report"}.</p>`:""}
+  ${D.skips.length?`<p class="note" style="margin:4px 0 0">Postponed weeks: ${D.skips.map(fd).join(", ")}.</p>`:""}</div>
+  <h3>Academic sessions</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Date</th><th>Topic</th><th>First slot</th><th>Core presenter</th><th>Status</th><th class="n">Attendance</th></tr></thead><tbody>
+  ${D.rows.map(r=>`<tr><td>${fd(r.date)}</td><td>${esc(r.title)}${r.quiz?` <span class="tag">${esc(r.quiz)}</span>`:""}${r.notes?`<div class="note">${esc(r.notes)}</div>`:""}</td><td>${r.firstType?esc(r.firstType)+(r.firstBy?": "+esc(r.firstBy):""):"—"}</td><td>${esc(r.coreBy)||"—"}</td><td class="${r.status==="held"?"st-held":r.status==="cancelled"?"st-cancel":"st-none"}">${stLabel[r.status]}</td><td class="n">${r.att!==""?r.att+"/"+D.res.length:"—"}</td></tr>`).join("")||`<tr><td colspan="6" class="note">No sessions in this period.</td></tr>`}</tbody></table></div>
+  <h3>Residents: presentations, attendance and scores</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Resident</th><th class="n">Core lectures</th><th class="n">Case presentations</th><th class="n">Journal clubs</th><th class="n">M&amp;M</th><th class="n">Total</th><th class="n">Attendance</th><th class="n">Average score</th></tr></thead><tbody>
+  ${D.per.map(p=>`<tr><td>${esc(p.r.name)} <span class="note">R${p.r.level}</span></td><td class="n">${p.lec}</td><td class="n">${p.case}</td><td class="n">${p.jc}</td><td class="n">${p.mm}</td><td class="n"><b>${p.lec+p.case+p.jc+p.mm}</b></td><td class="n">${p.att}/${p.heldN} (${pct(p)})</td><td class="n">${avg(p.scores)!==""?avg(p.scores)+"%":"—"}</td></tr>`).join("")||`<tr><td colspan="8" class="note">No residents.</td></tr>`}</tbody></table><p class="note" style="margin:8px 0 0">Counts only include sessions recorded as held.</p></div>`;
+  if(D.quizzes.length)h+=`<h3>Quiz and exam scores (%)</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Resident</th>${D.quizzes.map(q=>`<th class="n">${fd(q.date)}<br>${esc(q.quiz)}</th>`).join("")}</tr></thead><tbody>${D.res.map(r=>`<tr><td>${esc(r.name)}</td>${D.quizzes.map(q=>{const L=ST.log[q.key];const v=L&&L.scores?L.scores[r.id]:undefined;return `<td class="n">${v??"—"}</td>`}).join("")}</tr>`).join("")}</tbody></table></div>`;
+  h+=`<h3>Rotations in this period</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Resident</th><th>Year</th><th>Rotation</th></tr></thead><tbody>${D.rot.map(x=>`<tr><td>${esc(x.r.name)}</td><td>R${x.r.level}</td><td>${x.names.map(esc).join(", ")||"Outside the academic year"}</td></tr>`).join("")}</tbody></table></div>`;
+  return h;
+}
+function bindReport(){
+  document.querySelectorAll("[data-rp]").forEach(b=>b.onclick=()=>{const k=b.dataset.rp;let a,bb;if(k==="this")[a,bb]=monthRange(0);else if(k==="last")[a,bb]=monthRange(-1);else if(k==="year"){a=ST.start;bb=addD(ST.start,364)}else{a=REP.a;bb=REP.b}REP={a,b:bb,mode:k};render()});
+  const g=$("#rgo");if(g)g.onclick=()=>{const a=$("#ra").value,b=$("#rb").value;if(a&&b&&a<=b){REP={a,b,mode:"custom"};render()}else toast("Choose a valid period")};
+  const x=$("#xls");if(x)x.onclick=exportXLSX;
+}
+async function exportXLSX(){
+  const st=$("#xst");const D=reportData(REP.a,REP.b);
+  if(!window.XLSX){st.textContent="Preparing…";await new Promise(r=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=r;s.onerror=r;document.head.appendChild(s)})}
+  const summary=[[ST.name],["Report period",D.a+" to "+D.b],["Generated",today()],[],["Sessions scheduled",D.rows.length],["Held",D.held],["Did not take place",D.cancelled],["Not recorded",D.unrec],["Quizzes and exams held",D.quizzes.length],["Postponed weeks",D.skips.join(", ")]];
+  const sess=[["Date","Week","Block","Topic","Assessment","First slot","First slot presenter","Core presenter","Status","Attendance","Of","Notes"]].concat(D.rows.map(r=>[r.date,r.week,r.block,r.title,r.quiz,r.firstType,r.firstBy,r.coreBy,stLabel[r.status],r.att,r.att!==""?D.res.length:"",r.notes]));
+  const pres=[["Resident","Year","Core lectures","Case presentations","Journal clubs","M&M","Total","Sessions attended","Sessions held","Attendance %","Average score %"]].concat(D.per.map(p=>[p.r.name,"R"+p.r.level,p.lec,p.case,p.jc,p.mm,p.lec+p.case+p.jc+p.mm,p.att,p.heldN,p.heldN?Math.round(p.att/p.heldN*100):"",avg(p.scores)]));
+  const heldRows=D.rows.filter(r=>r.status==="held");
+  const att=[["Resident"].concat(heldRows.map(r=>r.date))].concat(D.res.map(rr=>[rr.name].concat(heldRows.map(r=>{const L=ST.log[r.key];return (L.att||[]).includes(rr.id)?"✓":"✗"}))));
+  const qz=[["Resident"].concat(D.quizzes.map(q=>q.date+" "+q.quiz))].concat(D.res.map(rr=>[rr.name].concat(D.quizzes.map(q=>{const L=ST.log[q.key];return L&&L.scores&&L.scores[rr.id]!=null?L.scores[rr.id]:""}))));
+  const rot=[["Resident","Year","Rotation in period"]].concat(D.rot.map(x=>[x.r.name,"R"+x.r.level,x.names.join(", ")]));
+  const name=`department-report-${D.a}-to-${D.b}`;
+  if(window.XLSX){const wb=XLSX.utils.book_new();const add=(rows,n,w)=>{const ws=XLSX.utils.aoa_to_sheet(rows);if(w)ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,n)};
+    add(summary,"Summary",[26,40]);add(sess,"Sessions",[11,6,6,48,16,18,20,20,16,10,5,30]);add(pres,"Presenters",[22,6,12,16,12,6,7,16,13,12,14]);add(att,"Attendance",[22].concat(heldRows.map(()=>11)));add(qz,"Scores",[22].concat(D.quizzes.map(()=>18)));add(rot,"Rotations",[22,6,50]);
+    XLSX.writeFile(wb,name+".xlsx");st.textContent="Downloaded";}
+  else{const csv=r=>"\ufeff"+r.map(x=>x.map(c=>{c=String(c??"");return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(",")).join("\r\n");download(new Blob([csv(sess)],{type:"text/csv"}),name+"-sessions.csv");download(new Blob([csv(pres)],{type:"text/csv"}),name+"-presenters.csv");st.textContent="Excel library unavailable offline — saved as CSV files instead"}
+}
+/* ================= access: PIN lock, shared read-only file ================= */
+const enc=new TextEncoder(),dec=new TextDecoder();
+const b64=buf=>{let s="";const b=new Uint8Array(buf);for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function keyFrom(pass,salt){const k=await crypto.subtle.importKey("raw",enc.encode(pass),"PBKDF2",false,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:250000,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function sha(s){return b64(await crypto.subtle.digest("SHA-256",enc.encode(s)))}
+async function buildShared(pass){const d=JSON.parse(JSON.stringify(ST));["pinHash","pinSalt","viewPass","role","published"].forEach(k=>delete d[k]);
+  const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},await keyFrom(pass,salt),enc.encode(JSON.stringify(d)));
+  return JSON.stringify({app:"ent-program",v:1,updated:new Date().toISOString(),salt:b64(salt),iv:b64(iv),data:b64(ct)})}
+async function openShared(txt,pass){const j=JSON.parse(txt);const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(j.iv)},await keyFrom(pass,unb64(j.salt)),unb64(j.data));return {data:JSON.parse(dec.decode(pt)),updated:j.updated}}
+
+/* PIN pad */
+let pinBuf="",pinMode="unlock",pinFirst="",hiddenAt=0;
+function showLock(m){pinMode=m;pinBuf="";pinFirst="";$("#lockT").textContent=m==="set"?"Choose a 4-digit PIN":"Enter PIN";$("#lerr").textContent="";drawDots();$("#lock").classList.add("open")}
+function drawDots(){$("#dots").innerHTML=[0,1,2,3].map(i=>`<i class="${i<pinBuf.length?"f":""}"></i>`).join("")}
+$("#pad").innerHTML=[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(k=>k===""?"<span></span>":`<button data-k="${k}">${k}</button>`).join("");
+$("#pad").onclick=async e=>{const b=e.target.closest("button");if(!b)return;const k=b.dataset.k;
+  if(k==="⌫"){pinBuf=pinBuf.slice(0,-1);drawDots();return}if(pinBuf.length>=4)return;pinBuf+=k;drawDots();if(pinBuf.length<4)return;
+  const v=pinBuf;pinBuf="";
+  if(pinMode==="unlock"){if(await sha(ST.pinSalt+v)===ST.pinHash){$("#lock").classList.remove("open")}else{$("#lerr").textContent="Wrong PIN";drawDots()}}
+  else{if(!pinFirst){pinFirst=v;$("#lockT").textContent="Enter it again";drawDots()}else if(pinFirst===v){ST.pinSalt=b64(crypto.getRandomValues(new Uint8Array(12)));ST.pinHash=await sha(ST.pinSalt+v);save();$("#lock").classList.remove("open");toast("PIN set");render()}else{pinFirst="";$("#lockT").textContent="PINs did not match. Choose a 4-digit PIN";drawDots()}}};
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")hiddenAt=Date.now();else if(!VIEWER&&ST.pinHash&&hiddenAt&&Date.now()-hiddenAt>5*60000)showLock("unlock")});
+
+/* ================= live sync (Firebase) ================= */
+const FBV="10.12.2",FB="https://www.gstatic.com/firebasejs/"+FBV+"/";
+var LIVE=null; // {auth,db,fs,user,role,unsub:[]}
+var CFG=null,pendingRender=false,writeT=null,lastWrite=0;
+const PUBLIC_KEYS=["name","start","cycle","times","residents","skips","override"];
+const PRIVATE_KEYS=["log"];
+function pick(o,keys){const r={};keys.forEach(k=>{if(o[k]!==undefined)r[k]=o[k]});return r}
+function isEditing(){const a=document.activeElement;return $("#scrim").classList.contains("open")||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))}
+function liveRender(){if(isEditing()){pendingRender=true;return}pendingRender=false;render()}
+document.addEventListener("focusout",()=>setTimeout(()=>{if(pendingRender&&!isEditing())liveRender()},300));
+function pushLive(){
+  if(!LIVE||LIVE.role!=="admin")return;
+  clearTimeout(writeT);writeT=setTimeout(async()=>{
+    const {fs,db}=LIVE;lastWrite=Date.now();
+    try{await fs.setDoc(fs.doc(db,"program","public"),JSON.parse(JSON.stringify(pick(ST,PUBLIC_KEYS))));
+        await fs.setDoc(fs.doc(db,"program","private"),JSON.parse(JSON.stringify(pick(ST,PRIVATE_KEYS))));setSync("Saved to the cloud")}
+    catch(e){setSync("Saving failed: "+(e.code||e.message))}
+  },500);
+}
+var SYNC="";function setSync(t){SYNC=t;const el=$("#syncst");if(el)el.textContent=t}
+async function loadCfg(){try{const r=await fetch("firebase-config.json",{cache:"no-store"});if(r.ok){CFG=await r.json();try{localStorage.setItem("ent-program-fbcfg",JSON.stringify(CFG))}catch(e){}}}catch(e){}
+  if(!CFG){try{CFG=JSON.parse(localStorage.getItem("ent-program-fbcfg")||"null")}catch(e){}}return CFG&&CFG.apiKey&&CFG.projectId?CFG:null}
+async function initLive(){
+  const [A,AU,F]=await Promise.all([import(FB+"firebase-app.js"),import(FB+"firebase-auth.js"),import(FB+"firebase-firestore.js")]);
+  const app=A.initializeApp(CFG);const auth=AU.getAuth(app);
+  let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache()})}catch(e){db=F.getFirestore(app)}
+  LIVE={app,auth,db,fs:F,au:AU,user:null,role:null,unsub:[]};
+  AU.onAuthStateChanged(auth,u=>{LIVE.user=u;LIVE.unsub.forEach(f=>f());LIVE.unsub=[];if(!u){signInScreen();return}
+    if(!u.emailVerified){verifyScreen();return}resolveRole()});
+}
+function shell(h){document.querySelector("nav.tabs").style.display="none";$("#psub").textContent="";$("#pname").textContent=ST.name||"ENT Residency Program";$("#view").innerHTML=`<div class="gate">${h}</div>`}
+function signInScreen(msg){
+  shell(`<h2>Sign in</h2><p class="note">Use the email your program director added to the program.</p>
+  <label class="f"><span>Email</span><input id="le" type="email" autocomplete="email" dir="ltr"></label>
+  <label class="f"><span>Password</span><input id="lp" type="password" autocomplete="current-password" dir="ltr"></label>
+  <div id="lmsg" style="min-height:1.3em;color:#B42318">${msg||""}</div>
+  <div class="row"><button class="btn p" id="lin">Sign in</button><button class="btn" id="lup">Create account</button><button class="btn" id="lrs">Forgot password</button></div>
+  <p class="note" style="margin-top:12px">First time? Choose Create account with your email, then confirm it from the link we email you.</p>`);
+  const {auth,au}=LIVE,em=()=>$("#le").value.trim(),pw=()=>$("#lp").value,m=t=>$("#lmsg").textContent=t;
+  const err=e=>({"auth/invalid-credential":"Wrong email or password.","auth/wrong-password":"Wrong email or password.","auth/user-not-found":"No account with this email. Choose Create account.","auth/email-already-in-use":"This email already has an account. Choose Sign in.","auth/weak-password":"Use at least 6 characters.","auth/invalid-email":"Check the email address.","auth/network-request-failed":"No internet connection."}[e.code]||e.message);
+  $("#lin").onclick=async()=>{m("Signing in…");try{await au.signInWithEmailAndPassword(auth,em(),pw())}catch(e){m(err(e))}};
+  $("#lup").onclick=async()=>{m("Creating account…");try{const c=await au.createUserWithEmailAndPassword(auth,em(),pw());await au.sendEmailVerification(c.user)}catch(e){m(err(e))}};
+  $("#lrs").onclick=async()=>{if(!em()){m("Write your email first.");return}try{await au.sendPasswordResetEmail(auth,em());m("Check your email for a reset link.")}catch(e){m(err(e))}};
+}
+function verifyScreen(){
+  shell(`<h2>Confirm your email</h2><p>We sent a link to <b dir="ltr">${esc(LIVE.user.email)}</b>. Open it, then come back and press Continue. Check the spam folder too.</p>
+  <div class="row"><button class="btn p" id="vc">Continue</button><button class="btn" id="vr">Send the link again</button><button class="btn" id="vo">Sign out</button></div><div id="vm" class="note" style="margin-top:8px"></div>`);
+  $("#vc").onclick=async()=>{await LIVE.user.reload();if(LIVE.user.emailVerified){await LIVE.user.getIdToken(true);resolveRole()}else $("#vm").textContent="Not confirmed yet."};
+  $("#vr").onclick=async()=>{try{await LIVE.au.sendEmailVerification(LIVE.user);$("#vm").textContent="Sent."}catch(e){$("#vm").textContent=e.code==="auth/too-many-requests"?"Please wait a few minutes before asking again.":e.message}};
+  $("#vo").onclick=()=>LIVE.au.signOut(LIVE.auth);
+}
+async function resolveRole(){
+  const {fs,db}=LIVE;shell(`<p class="note">Opening the program…</p>`);
+  let role=null;
+  try{await fs.getDoc(fs.doc(db,"program","private"));role="admin"}catch(e){}
+  if(!role){try{await fs.getDoc(fs.doc(db,"program","public"));role="viewer"}catch(e){}}
+  if(!role){shell(`<h2>No access yet</h2><p>Your account <b dir="ltr">${esc(LIVE.user.email)}</b> is not on this program's list.</p><p class="note">Send this email to your program director so they can add you, then press Try again.</p><div class="row"><button class="btn p" id="ta">Try again</button><button class="btn" id="so">Sign out</button></div>`);
+    $("#ta").onclick=resolveRole;$("#so").onclick=()=>LIVE.au.signOut(LIVE.auth);return}
+  LIVE.role=role;VIEWER=role!=="admin";document.querySelector("nav.tabs").style.display="";
+  const local=JSON.parse(JSON.stringify(ST));
+  const pubRef=fs.doc(db,"program","public"),prvRef=fs.doc(db,"program","private");
+  if(role==="admin"){
+    const snap=await fs.getDoc(pubRef).catch(()=>null);
+    if((!snap||!snap.exists())&&local.residents&&local.residents.length){ // first connection: upload what is on this device
+      await fs.setDoc(pubRef,pick(local,PUBLIC_KEYS));await fs.setDoc(prvRef,pick(local,PRIVATE_KEYS));toast("Your program was uploaded to the cloud")}
+    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data()||{};ST.log=d.log||{};liveRender()}));
+    LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","lists"),s=>{LIVE.lists=s.data()||{admins:[],viewers:[]};if(TAB==="res")liveRender()},()=>{}));
+  }else{ST.log={}}
+  LIVE.unsub.push(fs.onSnapshot(pubRef,s=>{const d=s.data();if(d){PUBLIC_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});if(!VIEWER)try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}setSync(s.metadata.hasPendingWrites?"Waiting for internet to save…":"Up to date");liveRender()}));
+  if(VIEWER&&!["week","lectures","quizzes"].includes(TAB))TAB="week";
+  render();if(!VIEWER&&ST.pinHash)showLock("unlock");
+}
+/* ---------- settings panel ---------- */
+function accessPanel(){
+  if(LIVE&&LIVE.role==="admin"){const L=LIVE.lists||{admins:[],viewers:[]};
+    const li=(arr,kind)=>(arr||[]).map(e=>`<div class="kv"><span dir="ltr">${esc(e)}</span><span><button class="btn sm d" data-rm="${kind}|${esc(e)}">Remove</button></span></div>`).join("")||'<p class="note">Nobody yet.</p>';
+    return `<h2>Live sync and access</h2><div class="panel noprint"><p>Signed in as <b dir="ltr">${esc(LIVE.user.email)}</b>. <span class="note" id="syncst">${esc(SYNC)}</span></p>
+    <p class="note">Every change you make reaches everyone within seconds. Residents see only the lecture schedule and exam dates.</p>
+    <h3>Residents and consultants (view only)</h3>${li(L.viewers,"viewers")}
+    <div class="row" style="margin-top:8px"><input id="newv" type="email" dir="ltr" placeholder="email@example.com" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button class="btn p" id="addv">Add viewer</button></div>
+    <h3>Co-editors (can change the program)</h3>${li(L.admins,"admins")}
+    <div class="row" style="margin-top:8px"><input id="newa" type="email" dir="ltr" placeholder="email@example.com" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button class="btn" id="adda">Add co-editor</button></div>
+    <p class="note">Send them the app link. They create an account with the same email and confirm it.</p>
+    <div class="row" style="margin-top:10px">${ST.pinHash?'<button class="btn" id="pinset">Change PIN</button><button class="btn d" id="pinoff">Remove PIN</button>':'<button class="btn" id="pinset">Lock this device with a PIN</button>'}<button class="btn" id="signout2">Sign out</button></div></div>`}
+  return `<h2>Live sync and access</h2><div class="panel noprint">
+  <p>This program is saved on this device only. Connect it to Firebase (free, by Google) so you can edit it and everyone you choose sees the update straight away. Residents will see only the lecture schedule and exam dates.</p>
+  <details><summary style="cursor:pointer;font-weight:600">Set up live sync (about 15 minutes, once)</summary>
+  <ol style="padding-left:18px">
+   <li>Open <b>console.firebase.google.com</b> and choose <b>Create a project</b> (Google Analytics not needed).</li>
+   <li><b>Build → Authentication → Get started → Email/Password → Enable → Save</b>.</li>
+   <li><b>Build → Firestore Database → Create database</b>, choose a location, start in <b>production mode</b>.</li>
+   <li>Write your email here and copy the rules below into <b>Firestore → Rules → Publish</b>.</li>
+  </ol>
+  <label class="f"><span>Your email (program director)</span><input id="owner" type="email" dir="ltr" value="${esc(ST.ownerEmail||"")}"></label>
+  <textarea id="rules" readonly style="width:100%;min-height:160px;font:12px ui-monospace,monospace;direction:ltr;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg)"></textarea>
+  <div class="row"><button class="btn" id="copyrules">Copy rules</button></div>
+  <ol start="5" style="padding-left:18px">
+   <li><b>Project settings (⚙️) → Your apps → Web (&lt;/&gt;)</b>, give it a name, <b>Register app</b>, and copy the <b>firebaseConfig</b> block. Paste it here:</li></ol>
+  <textarea id="cfgin" placeholder="const firebaseConfig = { apiKey: ... }" style="width:100%;min-height:110px;font:12px ui-monospace,monospace;direction:ltr;border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>
+  <div class="row"><button class="btn p" id="mkcfg">Create connection file</button><span class="note" id="cfgmsg"></span></div>
+  <ol start="6" style="padding-left:18px">
+   <li>Upload the downloaded <b>firebase-config.json</b> to this app's GitHub repository.</li>
+   <li><b>Authentication → Settings → Authorized domains → Add domain</b>: <b dir="ltr">${esc(location.hostname)}</b></li>
+   <li>Open the app again, choose <b>Create account</b> with the same email, confirm it from your inbox. Your current program uploads automatically.</li>
+  </ol></details>
+  <h3>Lock this device</h3><div class="row">${ST.pinHash?'<button class="btn" id="pinset">Change PIN</button><button class="btn d" id="pinoff">Remove PIN</button>':'<button class="btn" id="pinset">Set a PIN</button>'}</div></div>`;
+}
+function rulesText(owner){owner=(owner||"YOUR_EMAIL@example.com").trim().toLowerCase();return `rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function email() { return request.auth.token.email.lower(); }
+    function lists() { return get(/databases/$(db)/documents/access/lists).data; }
+    function hasLists() { return exists(/databases/$(db)/documents/access/lists); }
+    function isOwner() { return signedIn() && email() == '${owner}'; }
+    function isAdmin() { return isOwner() || (signedIn() && hasLists() && email() in lists().admins); }
+    function isViewer() { return isAdmin() || (signedIn() && hasLists() && email() in lists().viewers); }
+    match /access/lists { allow read, write: if isAdmin(); }
+    match /program/public { allow read: if isViewer(); allow write: if isAdmin(); }
+    match /program/private { allow read, write: if isAdmin(); }
+  }
+}`}
+function parseCfg(t){const g=k=>{const m=t.match(new RegExp(k+'\\s*:\\s*["\\\']([^"\\\']+)["\\\']'));return m?m[1]:null};const c={};["apiKey","authDomain","projectId","storageBucket","messagingSenderId","appId"].forEach(k=>{const v=g(k);if(v)c[k]=v});return c.apiKey&&c.projectId&&c.appId?c:null}
+function bindAccess(){
+  const ps=$("#pinset");if(ps)ps.onclick=()=>showLock("set");
+  const po=$("#pinoff");if(po)po.onclick=()=>{if(confirm("Remove the PIN from this device?")){ST.pinHash=null;ST.pinSalt=null;saveLocal();render()}};
+  const so=$("#signout"),so2=$("#signout2");[so,so2].forEach(b=>{if(b)b.onclick=()=>{if(LIVE)LIVE.au.signOut(LIVE.auth)}});
+  const ow=$("#owner"),ru=$("#rules");if(ow&&ru){const up=()=>{ru.value=rulesText(ow.value);ST.ownerEmail=ow.value.trim();saveLocal()};ow.oninput=up;up();
+    $("#copyrules").onclick=async()=>{try{await navigator.clipboard.writeText(ru.value);toast("Rules copied")}catch(e){ru.select();document.execCommand("copy");toast("Rules copied")}}}
+  const mk=$("#mkcfg");if(mk)mk.onclick=()=>{const c=parseCfg($("#cfgin").value);if(!c){$("#cfgmsg").textContent="Paste the whole firebaseConfig block from Firebase.";return}download(new Blob([JSON.stringify(c,null,1)],{type:"application/json"}),"firebase-config.json");$("#cfgmsg").textContent="Downloaded. Upload it to GitHub."};
+  const addTo=async(kind,inp)=>{const e=$(inp).value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e)){toast("Write a valid email");return}
+    const L=LIVE.lists||{admins:[],viewers:[]};const arr=new Set(L[kind]||[]);arr.add(e);const nl={admins:L.admins||[],viewers:L.viewers||[]};nl[kind]=[...arr];
+    try{await LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"access","lists"),nl);toast("Added "+e)}catch(err){toast("Could not save: "+(err.code||err.message))}};
+  const av=$("#addv");if(av)av.onclick=()=>addTo("viewers","#newv");
+  const aa=$("#adda");if(aa)aa.onclick=()=>addTo("admins","#newa");
+  document.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{const [kind,e]=b.dataset.rm.split("|");if(!confirm("Remove "+e+"?"))return;const L=LIVE.lists;const nl={admins:L.admins||[],viewers:L.viewers||[]};nl[kind]=nl[kind].filter(x=>x!==e);try{await LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"access","lists"),nl)}catch(err){toast("Could not save")}});
+}
+async function start(){
+  if(await loadCfg()){try{await initLive();return}catch(e){toast("Live sync unavailable offline — showing this device's copy")}}
+  render();if(ST.pinHash)showLock("unlock");
+}
+
+start();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>

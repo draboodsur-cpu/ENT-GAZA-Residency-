@@ -88,7 +88,7 @@ table.rt{border-collapse:separate;border-spacing:2px;font-size:.78rem;min-width:
 table.rt th{color:var(--muted);font-weight:600;padding:4px;text-align:center}
 table.rt th.n{text-align:left;width:130px;font-size:.86rem;color:var(--ink)}
 table.rt td{padding:6px 4px;border-radius:5px;text-align:center;line-height:1.2;vertical-align:middle}
-.c-ent{background:var(--ent)}.c-sub{background:var(--sub)}.c-ext{background:var(--ext)}.c-res{background:var(--res)}.c-chief{background:var(--chief)}
+.c-none{background:transparent;color:var(--muted)}.c-ent{background:var(--ent)}.c-sub{background:var(--sub)}.c-ext{background:var(--ext)}.c-res{background:var(--res)}.c-chief{background:var(--chief)}
 .plan .yr{margin-bottom:14px}
 .bar{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .bar div{padding:8px 6px;font-size:.8rem;line-height:1.25;border-right:2px solid var(--surface)}
@@ -145,7 +145,7 @@ table.rep td.n{text-align:center}
 <body>
 <header class="app"><div class="in"><h1 id="pname">ENT Residency Program</h1><p id="psub"></p></div>
 <nav class="tabs" role="tablist">
- <button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="quizzes">Exams</button><button data-t="ops">Operative levels</button><button data-t="rot">Rotations</button><button data-t="frame">Training framework</button><button data-t="report">Reports</button><button data-t="res" class="admin-only">Residents & settings</button>
+ <button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="quizzes">Exams</button><button data-t="theatre">Theatre</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="res" class="admin-only">Settings</button>
 </nav></header>
 <main id="view"></main>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
@@ -299,7 +299,7 @@ const resById=id=>ST.residents.find(r=>r.id===id);
 const sortedRes=()=>[...ST.residents].sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
 
 /* ---------- schedule ---------- */
-function slots(){
+function slotsRaw(){
   const blocks=CURRICULUM[ST.cycle],out=[];
   blocks.forEach((b,bi)=>{
     b.topics.forEach((t,ti)=>out.push({kind:"lec",bi,ti,block:b,topic:t,quiz:ti===4}));
@@ -311,6 +311,7 @@ function slots(){
   for(const s of out){while(skips.has(d))d=addD(d,7);s.date=d;s.week=++wk;s.key=ST.cycle+"|"+(s.kind==="lec"?s.bi+"-"+s.ti:s.title);d=addD(d,7)}
   assign(out);return out;
 }
+function slots(){return applyEdits(slotsRaw())}
 function rr(pool,i){return pool.length?pool[i%pool.length]:null}
 function assign(out){
   const all=sortedRes();let ci=0,li=0,ji=0,mi=0;
@@ -332,11 +333,6 @@ function assign(out){
   }
 }
 /* ---------- rotations ---------- */
-function rotFor(r){
-  const peers=sortedRes().filter(x=>x.level===r.level);const j=Math.max(0,peers.findIndex(x=>x.id===r.id));
-  const plan=ROTATIONS[r.level]||[];const sh=plan.length?j%plan.length:0;const order=plan.slice(sh).concat(plan.slice(0,sh));
-  const months=[];order.forEach(([n,m,c])=>{for(let k=0;k<m;k++)months.push({n,c})});return months.slice(0,12);
-}
 function monthIndex(dateS){const s=dt(ST.start),d=dt(dateS);return (d.getFullYear()-s.getFullYear())*12+d.getMonth()-s.getMonth()}
 function monthLabel(i){const s=dt(ST.start);const d=new Date(s.getFullYear(),s.getMonth()+i,1);return MON[d.getMonth()]+" "+String(d.getFullYear()).slice(2)}
 
@@ -352,12 +348,12 @@ function render(){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===TAB));
   if(VIEWER&&!["week","lectures","quizzes"].includes(TAB))TAB="week";
   document.querySelectorAll("nav.tabs button").forEach(b=>b.style.display=VIEWER&&!["week","lectures","quizzes"].includes(b.dataset.t)?"none":"");
-  const V={week:vWeek,lectures:vLectures,quizzes:vQuizzes,ops:vOps,rot:vRot,frame:vFrame,report:vReport,res:vRes}[TAB]||vWeek;
+  const V={week:vWeek,lectures:vLectures,quizzes:vQuizzes,theatre:vTheatre,people:vResidents,ops:vOps,rot:vRot,frame:vFrame,report:vReport,res:vRes}[TAB]||vWeek;
   $("#view").innerHTML=V(S);bind();window.scrollTo(0,0);
 }
 function sessionCard(s){
   const d=dt(s.date);
-  return `<div class="session"><div class="date"><b class="num">${d.getDate()}</b><span>${MON[d.getMonth()]} ${d.getFullYear()}, ${DAY[d.getDay()]}</span><span>Week ${s.week}${s.kind==="lec"?", block "+(s.bi+1):""}</span></div><ol>${s.items.map(it=>`<li class="${it.cls||""}"><span class="tm num">${it.tm}</span><span class="what">${esc(it.what)}</span><span class="who">${it.raw?it.who:esc(it.who)}</span></li>`).join("")}</ol></div>`;
+  return `<div class="session"><div class="date"><b class="num">${d.getDate()}</b><span>${MON[d.getMonth()]} ${d.getFullYear()}, ${DAY[d.getDay()]}</span><span>${s.week?"Week "+s.week:"Added session"}${s.kind==="lec"?", block "+(s.bi+1):""}</span></div><ol>${s.note?`<li><span class="tm">📝</span><span class="what" style="font-weight:400">${esc(s.note)}</span></li>`:""}${s.items.map(it=>`<li class="${it.cls||""}"><span class="tm num">${it.tm}</span><span class="what">${esc(it.what)}</span><span class="who">${it.raw?it.who:esc(it.who)}</span></li>`).join("")}</ol></div>`;
 }
 function vWeek(S){
   const t=today();const next=S.find(s=>s.date>=t);
@@ -372,26 +368,27 @@ function vWeek(S){
   if(nextQuiz)h+=`<p class="note" style="margin-bottom:0">Next assessment: <b>${esc(nextQuiz.kind==="exam"?nextQuiz.title:"Block quiz, "+nextQuiz.block.name)}</b> on ${fdy(nextQuiz.date)}.</p>`;
   if(VIEWER){h+=`</div></div>`;h+=`<p class="note noprint" style="margin-top:16px">${LIVE&&LIVE.user?"Signed in as "+esc(LIVE.user.email)+". ":""}<button class="btn sm" id="signout">Sign out</button></p>`;return h}
   h+=`</div><div class="panel"><h3 style="margin-top:0">Where residents are this month</h3>`;
-  h+=ST.residents.length?sortedRes().map(r=>{const m=(mi>=0&&mi<12)?rotFor(r)[mi]:null;return `<div class="kv"><span>${esc(r.name)} <span class="lvl" style="min-width:28px;height:20px;font-size:.72rem">R${r.level}</span></span><span>${m?esc(m.n):"Outside this academic year"}</span></div>`}).join(""):`<p class="note">Add residents in <a href="#res">Residents & settings</a> to see presenters and rotations.</p>`;
+  h+=ST.residents.length?sortedRes().map(r=>{const m=rotAt(r,t);return `<div class="kv"><span>${esc(r.name)} <span class="lvl" style="min-width:28px;height:20px;font-size:.72rem">R${r.level}</span></span><span>${m?esc(m.n):"Outside this academic year"}</span></div>`}).join(""):`<p class="note">Add residents in <a href="#people">Residents</a> to see presenters and rotations.</p>`;
   h+=`</div></div>`;
   return h;
 }
 function vLectures(S){
   const t=today();
   let h=`<h2>Academic sessions, cycle ${ST.cycle}</h2><p class="lead">Eight blocks of five weeks. Each session has a resident-led first slot (case presentation, journal club or M&M), a core topic and a practice or quiz slot. Cycle A and cycle B alternate each year, so every resident covers the whole curriculum twice in five years.</p>
-  <div class="row noprint" style="margin-bottom:14px"><button class="btn" data-csv="lectures">Export to Excel</button><button class="btn" onclick="window.print()">Print</button></div>`;
+  <div class="row noprint" style="margin-bottom:14px">${VIEWER?"":'<button class="btn p" id="addsess">+ Add session</button>'}<button class="btn" data-csv="lectures">Export to Excel</button><button class="btn" onclick="window.print()">Print</button></div>`;
   const opts=(sel,role)=>`<option value="">Auto</option>`+sortedRes().map(r=>`<option value="${r.id}" ${sel===r.id?"selected":""}>${esc(r.name)} R${r.level}</option>`).join("");
   let cur=-2;
   S.forEach(s=>{
     if(s.kind==="lec"&&s.bi!==cur){if(cur!==-2)h+=`</div></div>`;cur=s.bi;h+=`<div class="block"><div class="bh"><h3>Block ${s.bi+1}: ${esc(s.block.name)}</h3><small>${esc(s.block.ref)}</small></div><div class="panel">`}
-    if(s.kind==="exam"){h+=`</div></div><div class="block"><div class="panel"><div class="lec special ${s.date<t?"past":""}"><div class="d num">${fd(s.date)}<small>Week ${s.week}</small></div><div><div class="t">${esc(s.title)}</div><div class="s">${esc(s.desc)}</div>${s.date<=t&&!VIEWER?`<div class="s">${statusTxt(s)}</div>`:""}<div class="noprint" style="margin-top:6px">${s.date<=t&&!VIEWER?`<button class="btn sm" data-rec="${s.key}">Record attendance</button> `:""}${!VIEWER&&s.date>=t?`<button class="btn sm" data-skip="${s.date}">Postpone</button>`:""}</div></div></div>`;cur=-1;return}
+    if(s.kind!=="lec"){h+=`</div></div><div class="block"><div class="panel"><div class="lec special ${s.date<t?"past":""}"><div class="d num">${fd(s.date)}<small>${s.kind==="extra"?"Added":"Week "+s.week}</small></div><div><div class="t">${esc(s.title)}</div><div class="s">${s.kind==="extra"?esc(s.items[0].who):esc(s.desc)}</div>${s.note?`<div class="s">📝 ${esc(s.note)}</div>`:""}${s.date<=t&&!VIEWER?`<div class="s">${statusTxt(s)}</div>`:""}<div class="noprint" style="margin-top:6px">${!VIEWER?`<button class="btn sm" data-edit="${s.key}">Edit</button> `:""}${s.date<=t&&!VIEWER?`<button class="btn sm" data-rec="${s.key}">Record attendance</button> `:""}${!VIEWER&&s.date>=t&&s.kind==="exam"?`<button class="btn sm" data-skip="${s.date}">Postpone</button>`:""}</div></div></div>`;cur=-1;return}
     const first=s.items[0],lec=s.items[1];
     h+=`<div class="lec ${s.date<t?"past":""}"><div class="d num">${fd(s.date)}<small>Week ${s.week}</small></div><div><div class="t">${esc(s.topic)}</div>
     <div class="s">${esc(first.what)}: <select class="noprint" ${VIEWER?"hidden":""} data-ov="${s.key}|${first.role}">${opts(ST.override[s.key+"|"+first.role],first.role)}</select><span class="pr"> ${esc(first.who)}</span></div>
     <div class="s">Core topic presenter: <select class="noprint" ${VIEWER?"hidden":""} data-ov="${s.key}|lec">${opts(ST.override[s.key+"|lec"])}</select><span class="pr"> ${lec.rid?esc(resById(lec.rid).name):"Consultant"}</span></div>
     ${s.quiz?`<div class="s" style="color:var(--warn);font-weight:600">Block quiz in this session</div>`:""}
     ${s.date<=t&&!VIEWER?`<div class="s">${statusTxt(s)}</div>`:""}
-    <div class="noprint" style="margin-top:6px">${s.date<=t&&!VIEWER?`<button class="btn sm" data-rec="${s.key}">Record attendance</button> `:""}${!VIEWER&&s.date>=t?`<button class="btn sm" data-skip="${s.date}">Postpone</button>`:""}</div></div></div>`;
+    ${s.note?`<div class="s">📝 ${esc(s.note)}</div>`:""}
+    <div class="noprint" style="margin-top:6px">${!VIEWER?`<button class="btn sm" data-edit="${s.key}">Edit</button> `:""}${s.date<=t&&!VIEWER?`<button class="btn sm" data-rec="${s.key}">Record attendance</button> `:""}${!VIEWER&&s.date>=t?`<button class="btn sm" data-skip="${s.date}">Postpone</button>`:""}</div></div></div>`;
   });
   h+=`</div></div>`;
   if(ST.skips.length)h+=`<p class="note">Postponed weeks: ${ST.skips.slice().sort().map(fd).join(", ")}. Restore them in Residents & settings.</p>`;
@@ -400,7 +397,7 @@ function vLectures(S){
 function vQuizzes(S){
   const t=today();
   let h=`<h2>Quizzes and exams</h2><p class="lead">A 40-question MCQ quiz closes every block. Three larger assessments sit between blocks. Questions come from the block's topics and its reading list.</p>`;
-  h+=`<div class="panel">`+S.filter(s=>s.quiz||s.kind==="exam").map(s=>`<div class="quiz ${s.date<t?"past":""}" style="${s.date<t?"opacity:.55":""}"><div class="num" style="font-weight:600">${fd(s.date)}<div class="note">Week ${s.week}</div></div><div>${s.kind==="exam"?`<div class="t">${esc(s.title)}<span class="tag">Exam week</span></div><div class="s">${esc(s.desc)}</div>`:`<div class="t">Block ${s.bi+1} quiz: ${esc(s.block.name)}</div><div class="s">${s.block.topics.map(esc).join("; ")}</div><div class="s">40 MCQs, 45 minutes. Reading: ${esc(s.block.ref)}</div>`}</div></div>`).join("")+`</div>`;
+  h+=`<div class="panel">`+S.filter(s=>s.quiz||s.kind==="exam").map(s=>`<div class="quiz ${s.date<t?"past":""}" style="${s.date<t?"opacity:.55":""}"><div class="num" style="font-weight:600">${fd(s.date)}<div class="note">Week ${s.week}</div></div><div>${s.kind==="extra"?`<div class="t">${esc(s.title)}</div><div class="s">${esc(s.items[0].who)}</div>`:s.kind==="exam"?`<div class="t">${esc(s.title)}<span class="tag">Exam week</span></div><div class="s">${esc(s.desc)}</div>`:`<div class="t">Block ${s.bi+1} quiz: ${esc(s.block.name)}</div><div class="s">${s.block.topics.map(esc).join("; ")}</div><div class="s">40 MCQs, 45 minutes. Reading: ${esc(s.block.ref)}</div>`}</div></div>`).join("")+`</div>`;
   h+=`<h3>How quizzes run</h3><div class="panel"><div class="kv"><span>Format</span><span>Single best answer MCQs, closed book</span></div><div class="kv"><span>Pass mark</span><span>60%; below that, a short remediation plan with the supervisor</span></div><div class="kv"><span>Review</span><span>Answers discussed in the same session</span></div><div class="kv"><span>Records</span><span>Scores feed into the annual review</span></div></div>`;
   return h;
 }
@@ -424,7 +421,7 @@ function vRot(){
   const mi=monthIndex(today());
   h+=`<div class="panel rgrid"><table class="rt"><thead><tr><th class="n">Resident</th>${Array.from({length:12},(_,i)=>`<th style="${i===mi?"color:var(--act)":""}">${monthLabel(i)}</th>`).join("")}</tr></thead><tbody>`;
   sortedRes().forEach(r=>{const ms=rotFor(r);let cells="",k=0;while(k<ms.length){let j=k;while(j+1<ms.length&&ms[j+1].n===ms[k].n)j++;cells+=`<td colspan="${j-k+1}" class="c-${ms[k].c}">${esc(ms[k].n)}</td>`;k=j+1}
-    h+=`<tr><th class="n">${esc(r.name)} <span class="note">R${r.level}</span></th>${cells}</tr>`});
+    h+=`<tr><th class="n" data-prof="${r.id}" style="cursor:pointer;text-decoration:underline dotted">${esc(r.name)} <span class="note">R${r.level}</span></th>${cells}</tr>`});
   h+=`</tbody></table></div><div class="legend" style="margin-top:10px"><span><i class="c-ent"></i>ENT core</span><span><i class="c-sub"></i>ENT subspecialty</span><span><i class="c-ext"></i>Outside ENT</span><span><i class="c-res"></i>Elective or research</span><span><i class="c-chief"></i>Chief resident</span></div>
   <div class="row noprint"><button class="btn" data-csv="rot">Export to Excel</button><button class="btn" onclick="window.print()">Print</button></div>`;
   return h;
@@ -440,17 +437,7 @@ function vFrame(){
   return h;
 }
 function vRes(S){
-  const t=today(),mi=monthIndex(t);
-  let h=`<h2>Residents</h2><div class="panel noprint"><div class="row" style="align-items:flex-end"><label class="f" style="flex:2;min-width:180px;margin:0"><span>Name</span><input id="rn" placeholder="Dr. …"></label><label class="f" style="flex:1;min-width:90px;margin:0"><span>Year</span><select id="rl">${[1,2,3,4,5].map(y=>`<option value="${y}">R${y}</option>`).join("")}</select></label><button class="btn p" id="radd">Add resident</button></div></div>`;
-  if(!ST.residents.length)h+=`<div class="empty" style="margin-top:12px">No residents yet. Add each resident with their year; presenters and rotations fill in automatically.</div>`;
-  else{h+=`<div class="panel" style="margin-top:12px">`+sortedRes().map(r=>{
-      const mine=S.filter(s=>s.date>=t&&s.items&&s.items.some(it=>it.rid===r.id)).slice(0,3);const m=(mi>=0&&mi<12)?rotFor(r)[mi]:null;
-      const perf=[];PROCEDURES.forEach(([g,ps])=>ps.forEach(([n,lv])=>{if(lv[r.level-1]>=3&&(r.level===1||lv[r.level-2]<lv[r.level-1]))perf.push(n)}));
-      return `<div class="res-card"><div class="row"><span class="lvl">R${r.level}</span><b style="flex:1">${esc(r.name)}</b><select class="noprint" data-lvl="${r.id}" aria-label="Change year">${[1,2,3,4,5].map(y=>`<option value="${y}" ${y===r.level?"selected":""}>R${y}</option>`).join("")}</select><button class="btn sm d noprint" data-del="${r.id}">Remove</button></div>
-      <div class="note" style="margin-top:6px"><b>This month:</b> ${m?esc(m.n):"outside this academic year"}</div>
-      <div class="note"><b>Presenting next:</b> ${mine.length?mine.map(s=>fd(s.date)+" ("+esc(s.items.find(it=>it.rid===r.id).what)+")").join("; "):"nothing scheduled"}</div>
-      <div class="note"><b>New this year in theatre:</b> ${perf.map(esc).join("; ")||"consolidation of previous levels"}</div></div>`}).join("")+`</div>`;}
-  h+=`<p class="note">Promote everyone one year at the start of each academic year with the button below.</p><div class="row noprint"><button class="btn" id="promote">Promote all residents one year</button></div>`;
+  let h="";
   h+=`<h2>Settings</h2><div class="panel noprint"><label class="f"><span>Program name</span><input id="sname" value="${esc(ST.name)}"></label>
   <div class="row"><label class="f" style="flex:1;min-width:160px"><span>First academic session (sets the weekday)</span><input type="date" id="sstart" value="${ST.start}"></label><label class="f" style="flex:1;min-width:140px"><span>Curriculum cycle this year</span><select id="scycle"><option value="A" ${ST.cycle==="A"?"selected":""}>Cycle A (foundations)</option><option value="B" ${ST.cycle==="B"?"selected":""}>Cycle B (advanced)</option></select></label></div>
   <div class="row"><label class="f" style="flex:1"><span>First slot</span><input type="time" id="t0" value="${ST.times[0]}"></label><label class="f" style="flex:1"><span>Core topic</span><input type="time" id="t1" value="${ST.times[1]}"></label><label class="f" style="flex:1"><span>Practice or quiz</span><input type="time" id="t2" value="${ST.times[2]}"></label></div>
@@ -464,7 +451,7 @@ function vRes(S){
 function bind(){
   const v=$("#view");
   v.querySelectorAll("[data-rec]").forEach(b=>b.onclick=()=>recordSheet(b.dataset.rec));
-  bindReport();bindAccess();
+  bindReport();bindAccess();bindMore();
   v.querySelectorAll("[data-skip]").forEach(b=>b.onclick=()=>{if(!ST.skips.includes(b.dataset.skip))ST.skips.push(b.dataset.skip);save();toast("Postponed: everything after it moves one week");render()});
   v.querySelectorAll("[data-unskip]").forEach(b=>b.onclick=()=>{ST.skips=ST.skips.filter(d=>d!==b.dataset.unskip);save();render()});
   v.querySelectorAll("[data-ov]").forEach(s=>s.onchange=()=>{if(s.value)ST.override[s.dataset.ov]=s.value;else delete ST.override[s.dataset.ov];save();render()});
@@ -473,9 +460,9 @@ function bind(){
   v.querySelectorAll("[data-csv]").forEach(b=>b.onclick=()=>exportCSV(b.dataset.csv));
   v.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const r=resById(b.dataset.del);if(confirm("Remove "+r.name+"?")){ST.residents=ST.residents.filter(x=>x.id!==r.id);save();render()}});
   v.querySelectorAll("[data-lvl]").forEach(s=>s.onchange=()=>{resById(s.dataset.lvl).level=+s.value;save();render()});
-  const add=$("#radd");if(add)add.onclick=()=>{const n=$("#rn").value.trim();if(!n){$("#rn").focus();return}ST.residents.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:n,level:+$("#rl").value});save();toast("Added "+n);render()};
+  const add=$("#radd");if(add)add.onclick=()=>{const n=$("#rn").value.trim();if(!n){$("#rn").focus();return}const r={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:n,level:+$("#rl").value};ST.residents.push(r);const p=rpOf(r);p.since=ST.start;if($("#rbs")&&$("#rbs").value)p.boardStart=$("#rbs").value;save();toast("Added "+n);render()};
   const rn=$("#rn");if(rn)rn.onkeydown=e=>{if(e.key==="Enter")add.click()};
-  const pr=$("#promote");if(pr)pr.onclick=()=>{const grads=ST.residents.filter(r=>r.level===5);if(!confirm("Move every resident up one year?"+(grads.length?"\n\nR5 residents ("+grads.map(r=>r.name).join(", ")+") will be removed as graduates.":"")))return;ST.residents=ST.residents.filter(r=>r.level<5).map(r=>Object.assign(r,{level:r.level+1}));ST.override={};save();toast("Promoted");render()};
+  const pr=$("#promote");if(pr)pr.onclick=()=>{const grads=ST.residents.filter(r=>r.level===5);if(!confirm("Move every resident to the next year?"+(grads.length?"\n\nR5 residents ("+grads.map(r=>r.name).join(", ")+") will move to the graduates list.":"")+"\n\nThis year's rotations are kept in each resident's history."))return;[...ST.residents].forEach(r=>promote(r));ST.override={};save();toast("Everyone moved to the next year");render()};
   const ss=$("#ssave");if(ss)ss.onclick=()=>{ST.name=$("#sname").value.trim()||DEF.name;if($("#sstart").value&&$("#sstart").value!==ST.start){ST.start=$("#sstart").value;ST.skips=[];ST.override={}}ST.cycle=$("#scycle").value;ST.times=[$("#t0").value||"12:00",$("#t1").value||"12:45",$("#t2").value||"13:45"];save();toast("Settings saved");render()};
   const be=$("#bexp");if(be)be.onclick=()=>download(new Blob([JSON.stringify(ST,null,1)],{type:"application/json"}),"ent-program-"+today()+".json");
   const bi=$("#bimp");if(bi)bi.onchange=async()=>{try{const d=JSON.parse(await bi.files[0].text());if(!Array.isArray(d.residents))throw 0;ST=Object.assign({},DEF,d);save();toast("Data imported");render()}catch(e){toast("That file is not a program export")}};
@@ -539,10 +526,10 @@ function reportData(a,b){
     if(status==="held"){res.forEach(r=>{per[r.id].heldN++;if((L.att||[]).includes(r.id))per[r.id].att++});
       (s.items||[]).forEach(it=>{if(it.rid&&per[it.rid]&&it.role&&per[it.rid][it.role]!=null)per[it.rid][it.role]++});
       if(L.scores)Object.entries(L.scores).forEach(([id,v])=>{if(per[id])per[id].scores.push(v)})}
-    const first=s.kind==="lec"?s.items[0]:null,lec=s.kind==="lec"?s.items[1]:null;
+    const first=s.kind==="lec"?s.items[0]:null,lec=s.kind==="lec"?s.items[1]:(s.kind==="extra"?s.items[0]:null);
     return {date:s.date,week:s.week,block:s.kind==="lec"?s.bi+1:"",title:s.kind==="lec"?s.topic:s.title,
       firstType:first?first.what:"",firstBy:first&&first.rid?resById(first.rid).name:"",
-      coreBy:lec?(lec.rid?resById(lec.rid).name:"Consultant"):"",quiz:isAssess(s)?(s.kind==="exam"?s.title:"Block quiz"):"",
+      coreBy:lec?(lec.rid?resById(lec.rid).name:"Consultant"):"",quiz:isAssess(s)?(s.kind==="lec"?"Block quiz":s.title):"",
       status,att:L&&L.status==="held"?(L.att||[]).length:"",notes:L?L.notes||"":"",key:s.key,s}});
   const quizzes=rows.filter(x=>x.quiz&&x.status==="held");
   const skips=ST.skips.filter(d=>d>=a&&d<=b).sort();
@@ -565,8 +552,8 @@ function vReport(){
   ${D.skips.length?`<p class="note" style="margin:4px 0 0">Postponed weeks: ${D.skips.map(fd).join(", ")}.</p>`:""}</div>
   <h3>Academic sessions</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Date</th><th>Topic</th><th>First slot</th><th>Core presenter</th><th>Status</th><th class="n">Attendance</th></tr></thead><tbody>
   ${D.rows.map(r=>`<tr><td>${fd(r.date)}</td><td>${esc(r.title)}${r.quiz?` <span class="tag">${esc(r.quiz)}</span>`:""}${r.notes?`<div class="note">${esc(r.notes)}</div>`:""}</td><td>${r.firstType?esc(r.firstType)+(r.firstBy?": "+esc(r.firstBy):""):"—"}</td><td>${esc(r.coreBy)||"—"}</td><td class="${r.status==="held"?"st-held":r.status==="cancelled"?"st-cancel":"st-none"}">${stLabel[r.status]}</td><td class="n">${r.att!==""?r.att+"/"+D.res.length:"—"}</td></tr>`).join("")||`<tr><td colspan="6" class="note">No sessions in this period.</td></tr>`}</tbody></table></div>
-  <h3>Residents: presentations, attendance and scores</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Resident</th><th class="n">Core lectures</th><th class="n">Case presentations</th><th class="n">Journal clubs</th><th class="n">M&amp;M</th><th class="n">Total</th><th class="n">Attendance</th><th class="n">Average score</th></tr></thead><tbody>
-  ${D.per.map(p=>`<tr><td>${esc(p.r.name)} <span class="note">R${p.r.level}</span></td><td class="n">${p.lec}</td><td class="n">${p.case}</td><td class="n">${p.jc}</td><td class="n">${p.mm}</td><td class="n"><b>${p.lec+p.case+p.jc+p.mm}</b></td><td class="n">${p.att}/${p.heldN} (${pct(p)})</td><td class="n">${avg(p.scores)!==""?avg(p.scores)+"%":"—"}</td></tr>`).join("")||`<tr><td colspan="8" class="note">No residents.</td></tr>`}</tbody></table><p class="note" style="margin:8px 0 0">Counts only include sessions recorded as held.</p></div>`;
+  <h3>Residents: presentations, attendance and scores</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Resident</th><th class="n">Core lectures</th><th class="n">Case presentations</th><th class="n">Journal clubs</th><th class="n">M&amp;M</th><th class="n">Total</th><th class="n">Attendance</th><th class="n">Average score</th><th class="n">Theatre sessions</th></tr></thead><tbody>
+  ${D.per.map(p=>`<tr><td>${esc(p.r.name)} <span class="note">R${p.r.level}</span></td><td class="n">${p.lec}</td><td class="n">${p.case}</td><td class="n">${p.jc}</td><td class="n">${p.mm}</td><td class="n"><b>${p.lec+p.case+p.jc+p.mm}</b></td><td class="n">${p.att}/${p.heldN} (${pct(p)})</td><td class="n">${avg(p.scores)!==""?avg(p.scores)+"%":"—"}</td><td class="n">${theatreCount(p.r.id,D.a,D.b)}</td></tr>`).join("")||`<tr><td colspan="9" class="note">No residents.</td></tr>`}</tbody></table><p class="note" style="margin:8px 0 0">Counts only include sessions recorded as held.</p></div>`;
   if(D.quizzes.length)h+=`<h3>Quiz and exam scores (%)</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Resident</th>${D.quizzes.map(q=>`<th class="n">${fd(q.date)}<br>${esc(q.quiz)}</th>`).join("")}</tr></thead><tbody>${D.res.map(r=>`<tr><td>${esc(r.name)}</td>${D.quizzes.map(q=>{const L=ST.log[q.key];const v=L&&L.scores?L.scores[r.id]:undefined;return `<td class="n">${v??"—"}</td>`}).join("")}</tr>`).join("")}</tbody></table></div>`;
   h+=`<h3>Rotations in this period</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Resident</th><th>Year</th><th>Rotation</th></tr></thead><tbody>${D.rot.map(x=>`<tr><td>${esc(x.r.name)}</td><td>R${x.r.level}</td><td>${x.names.map(esc).join(", ")||"Outside the academic year"}</td></tr>`).join("")}</tbody></table></div>`;
   return h;
@@ -581,7 +568,7 @@ async function exportXLSX(){
   if(!window.XLSX){st.textContent="Preparing…";await new Promise(r=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";s.onload=r;s.onerror=r;document.head.appendChild(s)})}
   const summary=[[ST.name],["Report period",D.a+" to "+D.b],["Generated",today()],[],["Sessions scheduled",D.rows.length],["Held",D.held],["Did not take place",D.cancelled],["Not recorded",D.unrec],["Quizzes and exams held",D.quizzes.length],["Postponed weeks",D.skips.join(", ")]];
   const sess=[["Date","Week","Block","Topic","Assessment","First slot","First slot presenter","Core presenter","Status","Attendance","Of","Notes"]].concat(D.rows.map(r=>[r.date,r.week,r.block,r.title,r.quiz,r.firstType,r.firstBy,r.coreBy,stLabel[r.status],r.att,r.att!==""?D.res.length:"",r.notes]));
-  const pres=[["Resident","Year","Core lectures","Case presentations","Journal clubs","M&M","Total","Sessions attended","Sessions held","Attendance %","Average score %"]].concat(D.per.map(p=>[p.r.name,"R"+p.r.level,p.lec,p.case,p.jc,p.mm,p.lec+p.case+p.jc+p.mm,p.att,p.heldN,p.heldN?Math.round(p.att/p.heldN*100):"",avg(p.scores)]));
+  const pres=[["Resident","Year","Core lectures","Case presentations","Journal clubs","M&M","Total","Sessions attended","Sessions held","Attendance %","Average score %","Theatre sessions"]].concat(D.per.map(p=>[p.r.name,"R"+p.r.level,p.lec,p.case,p.jc,p.mm,p.lec+p.case+p.jc+p.mm,p.att,p.heldN,p.heldN?Math.round(p.att/p.heldN*100):"",avg(p.scores),theatreCount(p.r.id,D.a,D.b)]));
   const heldRows=D.rows.filter(r=>r.status==="held");
   const att=[["Resident"].concat(heldRows.map(r=>r.date))].concat(D.res.map(rr=>[rr.name].concat(heldRows.map(r=>{const L=ST.log[r.key];return (L.att||[]).includes(rr.id)?"✓":"✗"}))));
   const qz=[["Resident"].concat(D.quizzes.map(q=>q.date+" "+q.quiz))].concat(D.res.map(rr=>[rr.name].concat(D.quizzes.map(q=>{const L=ST.log[q.key];return L&&L.scores&&L.scores[rr.id]!=null?L.scores[rr.id]:""}))));
@@ -620,8 +607,8 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 const FBV="10.12.2",FB="https://www.gstatic.com/firebasejs/"+FBV+"/";
 var LIVE=null; // {auth,db,fs,user,role,unsub:[]}
 var CFG=null,pendingRender=false,writeT=null,lastWrite=0;
-const PUBLIC_KEYS=["name","start","cycle","times","residents","skips","override"];
-const PRIVATE_KEYS=["log"];
+const PUBLIC_KEYS=["name","start","cycle","times","residents","skips","override","sess","extra"];
+const PRIVATE_KEYS=["log","rp","theatre","graduates"];
 function pick(o,keys){const r={};keys.forEach(k=>{if(o[k]!==undefined)r[k]=o[k]});return r}
 function isEditing(){const a=document.activeElement;return $("#scrim").classList.contains("open")||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))}
 function liveRender(){if(isEditing()){pendingRender=true;return}pendingRender=false;render()}
@@ -681,9 +668,9 @@ async function resolveRole(){
     const snap=await fs.getDoc(pubRef).catch(()=>null);
     if((!snap||!snap.exists())&&local.residents&&local.residents.length){ // first connection: upload what is on this device
       await fs.setDoc(pubRef,pick(local,PUBLIC_KEYS));await fs.setDoc(prvRef,pick(local,PRIVATE_KEYS));toast("Your program was uploaded to the cloud")}
-    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data()||{};ST.log=d.log||{};liveRender()}));
+    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data()||{};PRIVATE_KEYS.forEach(k=>{ST[k]=d[k]!==undefined?d[k]:(k==="log"||k==="rp"?{}:k==="theatre"?{lists:[],weeks:{}}:[])});liveRender()}));
     LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","lists"),s=>{LIVE.lists=s.data()||{admins:[],viewers:[]};if(TAB==="res")liveRender()},()=>{}));
-  }else{ST.log={}}
+  }else{PRIVATE_KEYS.forEach(k=>delete ST[k]);ST.log={}}
   LIVE.unsub.push(fs.onSnapshot(pubRef,s=>{const d=s.data();if(d){PUBLIC_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});if(!VIEWER)try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}setSync(s.metadata.hasPendingWrites?"Waiting for internet to save…":"Up to date");liveRender()}));
   if(VIEWER&&!["week","lectures","quizzes"].includes(TAB))TAB="week";
   render();if(!VIEWER&&ST.pinHash)showLock("unlock");
@@ -757,6 +744,176 @@ async function start(){
   if(await loadCfg()){try{await initLive();return}catch(e){toast("Live sync unavailable offline — showing this device's copy")}}
   render();if(ST.pinHash)showLock("unlock");
 }
+
+/* ================= editable sessions ================= */
+const FIRST_TYPES=["Case presentation","Journal club","Morbidity and mortality meeting","Radiology meeting","Guest lecture","Other"];
+function applyEdits(out){
+  const E=ST.sess||{};
+  out.forEach(s=>{const o=E[s.key];if(!o)return;
+    if(o.date)s.date=o.date;
+    if(o.topic){if(s.kind==="lec"){s.topic=o.topic;s.items[1].what=o.topic}else{s.title=o.topic;s.items[0].what=o.topic}}
+    if(o.desc!=null&&s.kind==="exam"){s.desc=o.desc;s.items[0].who=o.desc}
+    if(s.kind==="lec"){
+      if(o.firstType)s.items[0].what=o.firstType;
+      if(o.quiz!=null&&o.quiz!==s.quiz){s.quiz=o.quiz;s.items[2]=o.quiz?{tm:ST.times[2],what:"Quiz: "+s.block.name,who:"MCQs on this block, reviewed together afterwards",cls:"quiz"}:{tm:ST.times[2],what:"Image and audiogram review",who:"Seniors lead, juniors answer"}}
+      if(o.third&&!s.quiz)s.items[2]={tm:ST.times[2],what:o.third,who:""};
+    }
+    if(o.note)s.note=o.note;
+    if(o.hidden)s.hidden=true;
+  });
+  (ST.extra||[]).forEach(x=>{const pr=x.presenter&&resById(x.presenter);
+    out.push({kind:"extra",key:"X|"+x.id,id:x.id,date:x.date,week:"",title:x.title,desc:x.desc||"",quiz:!!x.quiz,note:x.note||"",
+      items:[{tm:x.time||ST.times[0],what:x.title,who:pr?"Presenter: "+pr.name+" (R"+pr.level+")":(x.desc||"Consultant"),role:"lec",rid:pr?pr.id:null,cls:x.quiz?"quiz":""}]})});
+  return out.filter(s=>!s.hidden).sort((a,b)=>a.date.localeCompare(b.date)||(a.week||99)-(b.week||99));
+}
+function resOptions(sel,auto){return `<option value="">${auto?"Auto ("+esc(auto)+")":"Consultant / none"}</option>`+sortedRes().map(r=>`<option value="${r.id}" ${sel===r.id?"selected":""}>${esc(r.name)} R${r.level}</option>`).join("")}
+function editSession(key){
+  if(key.startsWith("X|"))return extraSheet(key.slice(2));
+  const all=slotsRaw(),s=all.find(x=>x.key===key);if(!s)return;const o=Object.assign({},(ST.sess||{})[key]);
+  const cur=slots().find(x=>x.key===key)||s;
+  openSheet(`<h3>Edit session</h3><div class="note">${s.kind==="lec"?"Block "+(s.bi+1)+": "+esc(s.block.name):"Assessment week"}</div>
+  <label class="f" style="margin-top:10px"><span>Date</span><input type="date" id="e_date" value="${cur.date}"></label>
+  <label class="f"><span>${s.kind==="lec"?"Core topic":"Title"}</span><input id="e_topic" value="${esc(s.kind==="lec"?cur.topic:cur.title)}"></label>
+  ${s.kind==="lec"?`<div class="row"><label class="f" style="flex:1"><span>First slot</span><select id="e_first">${FIRST_TYPES.map(t=>`<option ${t===cur.items[0].what?"selected":""}>${t}</option>`).join("")}</select></label>
+  <label class="f" style="flex:1"><span>First slot presenter</span><select id="e_p0">${resOptions(ST.override[key+"|"+s.items[0].role],s.items[0].rid?resById(s.items[0].rid).name:"none")}</select></label></div>
+  <label class="f"><span>Core topic presenter</span><select id="e_p1">${resOptions(ST.override[key+"|lec"],s.items[1].rid?resById(s.items[1].rid).name:"Consultant")}</select></label>
+  <label class="f"><span>Third slot (leave empty for default)</span><input id="e_third" value="${esc(o.third||"")}" placeholder="${esc(s.items[2].what)}"></label>
+  <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input type="checkbox" id="e_quiz" ${cur.quiz?"checked":""}> Quiz in this session</label>`:
+  `<label class="f"><span>Details</span><input id="e_desc" value="${esc(cur.desc||"")}"></label>`}
+  <label class="f"><span>Note shown on the schedule</span><input id="e_note" value="${esc(o.note||"")}" placeholder="e.g. Hall 2, guest speaker"></label>
+  <label style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="e_hide"> Remove this session from the schedule</label>
+  <div class="row"><button class="btn p" id="e_save">Save</button><button class="btn" id="e_cancel">Cancel</button>${(ST.sess||{})[key]?'<button class="btn" id="e_reset">Reset to original</button>':""}</div>`);
+  $("#e_cancel").onclick=closeSheet;
+  if($("#e_reset"))$("#e_reset").onclick=()=>{delete ST.sess[key];delete ST.override[key+"|lec"];delete ST.override[key+"|"+s.items[0].role];save();closeSheet();render()};
+  $("#e_save").onclick=()=>{
+    const n={};const d=$("#e_date").value;if(d&&d!==s.date)n.date=d;
+    const tp=$("#e_topic").value.trim();if(tp&&tp!==(s.kind==="lec"?s.topic:s.title))n.topic=tp;
+    if(s.kind==="lec"){const f=$("#e_first").value;if(f!==s.items[0].what)n.firstType=f;const th=$("#e_third").value.trim();if(th)n.third=th;const q=$("#e_quiz").checked;if(q!==s.quiz)n.quiz=q;
+      [["e_p0",s.items[0].role],["e_p1","lec"]].forEach(([id,role])=>{const v=$("#"+id).value;if(v)ST.override[key+"|"+role]=v;else delete ST.override[key+"|"+role]})}
+    else{const ds=$("#e_desc").value.trim();if(ds!==s.desc)n.desc=ds}
+    const nt=$("#e_note").value.trim();if(nt)n.note=nt;if($("#e_hide").checked)n.hidden=true;
+    ST.sess=ST.sess||{};if(Object.keys(n).length)ST.sess[key]=n;else delete ST.sess[key];save();closeSheet();toast("Saved");render()};
+}
+function extraSheet(id){
+  const x=id?(ST.extra||[]).find(e=>e.id===id):{date:today(),time:ST.times[0],title:"",presenter:"",desc:"",quiz:false,note:""};if(!x)return;
+  openSheet(`<h3>${id?"Edit extra session":"Add a session"}</h3>
+  <div class="row"><label class="f" style="flex:1"><span>Date</span><input type="date" id="x_date" value="${x.date}"></label><label class="f" style="flex:1"><span>Time</span><input type="time" id="x_time" value="${x.time||""}"></label></div>
+  <label class="f"><span>Title</span><input id="x_title" value="${esc(x.title)}" placeholder="e.g. Temporal bone dissection workshop"></label>
+  <label class="f"><span>Presenter</span><select id="x_pr">${resOptions(x.presenter)}</select></label>
+  <label class="f"><span>Details (shown when there is no resident presenter)</span><input id="x_desc" value="${esc(x.desc||"")}" placeholder="e.g. Dr. … (consultant)"></label>
+  <label class="f"><span>Note</span><input id="x_note" value="${esc(x.note||"")}"></label>
+  <label style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="x_quiz" ${x.quiz?"checked":""}> This is a quiz or exam</label>
+  <div class="row"><button class="btn p" id="x_save">Save</button><button class="btn" id="x_cancel">Cancel</button>${id?'<button class="btn d" id="x_del">Delete</button>':""}</div>`);
+  $("#x_cancel").onclick=closeSheet;
+  if($("#x_del"))$("#x_del").onclick=()=>{if(!confirm("Delete this session?"))return;ST.extra=ST.extra.filter(e=>e.id!==id);save();closeSheet();render()};
+  $("#x_save").onclick=()=>{const t=$("#x_title").value.trim();if(!t||!$("#x_date").value){toast("Add a title and date");return}
+    const n={id:id||Date.now().toString(36),date:$("#x_date").value,time:$("#x_time").value,title:t,presenter:$("#x_pr").value,desc:$("#x_desc").value.trim(),quiz:$("#x_quiz").checked,note:$("#x_note").value.trim()};
+    ST.extra=(ST.extra||[]).filter(e=>e.id!==n.id).concat([n]);save();closeSheet();toast("Saved");render()};
+}
+/* ================= rotations: per-resident blocks ================= */
+function rpOf(r){ST.rp=ST.rp||{};if(!ST.rp[r.id])ST.rp[r.id]={rot:[],hist:[],since:"",boardStart:"",email:"",phone:"",notes:""};return ST.rp[r.id]}
+function templateMonths(r){
+  const peers=sortedRes().filter(x=>x.level===r.level);const j=Math.max(0,peers.findIndex(x=>x.id===r.id));
+  const plan=ROTATIONS[r.level]||[];const sh=plan.length?j%plan.length:0;const order=plan.slice(sh).concat(plan.slice(0,sh));
+  const months=[];order.forEach(([n,m,c])=>{for(let k=0;k<m;k++)months.push({n,c})});return months.slice(0,12);
+}
+function addMonths(s,m){const d=dt(s);d.setMonth(d.getMonth()+m);return iso(d)}
+function rotAt(r,date){const p=(ST.rp||{})[r.id];if(p&&p.rot&&p.rot.length){const x=p.rot.find(z=>z.from<=date&&date<=z.to);return x?{n:x.name,c:x.cat||"ent"}:null}
+  const mi=monthIndex(date);return mi>=0&&mi<12?templateMonths(r)[mi]:null}
+function rotFor(r){const s=dt(ST.start),out=[];for(let i=0;i<12;i++){const d=iso(new Date(s.getFullYear(),s.getMonth()+i,15));out.push(rotAt(r,d)||{n:"—",c:"none"})}return out}
+function standardBlocks(r,from){const tm=templateMonths(r);const out=[];let i=0;while(i<tm.length){let j=i;while(j+1<tm.length&&tm[j+1].n===tm[i].n)j++;const f=addMonths(from,i);out.push({id:Math.random().toString(36).slice(2,8),name:tm[i].n,cat:tm[i].c,from:f,to:addD(addMonths(from,j+1),-1)});i=j+1}return out}
+const CATN={ent:"ENT core",sub:"ENT subspecialty",ext:"Outside ENT",res:"Elective or research",chief:"Chief resident"};
+function profile(id){
+  const r=resById(id);if(!r)return;const p=rpOf(r);
+  const blocks=(p.rot||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));const now=rotAt(r,today());
+  const yrs=r.level+(p.boardStart?"":"");
+  openSheet(`<h3>${esc(r.name)} <span class="lvl">R${r.level}</span></h3>
+  <div class="note">${now?"Now: <b>"+esc(now.n)+"</b>":"No rotation set for today"}${p.since?" · R"+r.level+" since "+fdy(p.since):""}${p.boardStart?" · Board started "+fdy(p.boardStart):""}</div>
+  <div class="panel" style="margin-top:10px">
+   <div class="row"><label class="f" style="flex:2;min-width:160px"><span>Name</span><input id="p_name" value="${esc(r.name)}"></label><label class="f" style="flex:1;min-width:90px"><span>Year</span><select id="p_lvl">${[1,2,3,4,5].map(y=>`<option value="${y}" ${y===r.level?"selected":""}>R${y}</option>`).join("")}</select></label></div>
+   <div class="row"><label class="f" style="flex:1;min-width:140px"><span>Board start date</span><input type="date" id="p_bs" value="${p.boardStart||""}"></label><label class="f" style="flex:1;min-width:140px"><span>In current year since</span><input type="date" id="p_since" value="${p.since||""}"></label></div>
+   <div class="row"><label class="f" style="flex:1;min-width:160px"><span>Phone</span><input id="p_phone" dir="ltr" value="${esc(p.phone||"")}"></label><label class="f" style="flex:1;min-width:160px"><span>Email</span><input id="p_email" dir="ltr" value="${esc(p.email||"")}"></label></div>
+   <label class="f"><span>Notes</span><input id="p_notes" value="${esc(p.notes||"")}"></label>
+  </div>
+  <h3>Rotations this year</h3>
+  ${blocks.length?"":`<p class="note">Following the standard R${r.level} plan automatically. Customise it to set exact dates.</p>`}
+  <div id="p_blocks">${blocks.map(b=>blockRow(b)).join("")}</div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="p_add">+ Add rotation</button><button class="btn" id="p_std">Fill with standard R${r.level} plan</button></div>
+  ${(p.hist||[]).length?`<h3>Previous years</h3>${p.hist.slice().reverse().map(hh=>`<div class="panel" style="margin-bottom:8px"><b>R${hh.level}</b> <span class="note">${hh.from?fdy(hh.from):"?"} to ${fdy(hh.to)}</span>${(hh.rot||[]).length?`<div class="note">${hh.rot.map(b=>esc(b.name)+" ("+fd(b.from)+"–"+fd(b.to)+")").join("; ")}</div>`:'<div class="note">Standard plan</div>'}</div>`).join("")}`:""}
+  <div class="row" style="margin-top:14px"><button class="btn p" id="p_save">Save</button><button class="btn" id="p_promote">${r.level<5?"Move to R"+(r.level+1):"Graduate"}</button><button class="btn" id="p_close">Close</button><button class="btn d" id="p_del">Remove</button></div>`);
+  const coll=()=>[...document.querySelectorAll("#p_blocks .blk")].map(el=>({id:el.dataset.id,name:el.querySelector(".b_n").value.trim(),cat:el.querySelector(".b_c").value,from:el.querySelector(".b_f").value,to:el.querySelector(".b_t").value})).filter(b=>b.name&&b.from&&b.to);
+  const wire=()=>document.querySelectorAll("#p_blocks .b_x").forEach(b=>b.onclick=()=>b.closest(".blk").remove());wire();
+  $("#p_add").onclick=()=>{const last=coll().sort((a,b)=>a.from.localeCompare(b.from)).pop();const f=last?addD(last.to,1):(p.since||ST.start);$("#p_blocks").insertAdjacentHTML("beforeend",blockRow({id:Math.random().toString(36).slice(2,8),name:"",cat:"ent",from:f,to:addD(addMonths(f,3),-1)}));wire()};
+  $("#p_std").onclick=()=>{const f=prompt("Start date of this year's plan (YYYY-MM-DD)",p.since||ST.start);if(!f)return;$("#p_blocks").innerHTML=standardBlocks(r,f).map(blockRow).join("");wire()};
+  $("#p_close").onclick=closeSheet;
+  $("#p_save").onclick=()=>{r.name=$("#p_name").value.trim()||r.name;r.level=+$("#p_lvl").value;Object.assign(p,{boardStart:$("#p_bs").value,since:$("#p_since").value,phone:$("#p_phone").value.trim(),email:$("#p_email").value.trim(),notes:$("#p_notes").value.trim(),rot:coll()});save();closeSheet();toast("Saved");render()};
+  $("#p_promote").onclick=()=>{$("#p_save").onclick();if(!confirm(r.level<5?`Move ${r.name} to R${r.level+1}? This year's rotations are kept in their history.`:`Graduate ${r.name}? They move to the graduates list.`))return;promote(r);save();toast("Done");render()};
+  $("#p_del").onclick=()=>{if(!confirm("Remove "+r.name+" from the program?"))return;ST.residents=ST.residents.filter(x=>x.id!==r.id);save();closeSheet();render()};
+}
+function blockRow(b){return `<div class="blk panel" data-id="${b.id}" style="margin-bottom:8px;padding:10px 12px"><div class="row"><input class="b_n" value="${esc(b.name)}" placeholder="Rotation, e.g. Otology" style="flex:2;min-width:150px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface)"><select class="b_c" style="flex:1;min-width:120px;padding:7px;border:1px solid var(--line);border-radius:7px;background:var(--surface)">${Object.entries(CATN).map(([k,v])=>`<option value="${k}" ${k===b.cat?"selected":""}>${v}</option>`).join("")}</select></div>
+ <div class="row" style="margin-top:6px"><label class="note">From <input type="date" class="b_f" value="${b.from}"></label><label class="note">To <input type="date" class="b_t" value="${b.to}"></label><button class="btn sm d b_x" style="margin-left:auto">Delete</button></div></div>`}
+function promote(r){const p=rpOf(r);p.hist=p.hist||[];p.hist.push({level:r.level,from:p.since||ST.start,to:today(),rot:p.rot||[]});p.rot=[];p.since=today();
+  if(r.level>=5){ST.graduates=(ST.graduates||[]).concat([{id:r.id,name:r.name,graduated:today(),boardStart:p.boardStart,hist:p.hist}]);ST.residents=ST.residents.filter(x=>x.id!==r.id)}else r.level++;
+  Object.keys(ST.override).forEach(k=>{if(ST.override[k]===r.id)delete ST.override[k]})}
+/* ================= residents tab ================= */
+function vResidents(S){
+  const t=today();
+  let h=`<h2>Residents</h2><div class="panel noprint"><div class="row" style="align-items:flex-end"><label class="f" style="flex:2;min-width:160px;margin:0"><span>Name</span><input id="rn" placeholder="Dr. …"></label><label class="f" style="flex:1;min-width:80px;margin:0"><span>Year</span><select id="rl">${[1,2,3,4,5].map(y=>`<option value="${y}">R${y}</option>`).join("")}</select></label><label class="f" style="flex:1;min-width:130px;margin:0"><span>Board start</span><input type="date" id="rbs"></label><button class="btn p" id="radd">Add</button></div></div>`;
+  if(!ST.residents.length)h+=`<div class="empty" style="margin-top:12px">No residents yet.</div>`;
+  else h+=`<div class="panel" style="margin-top:12px">`+sortedRes().map(r=>{const p=(ST.rp||{})[r.id]||{};const now=rotAt(r,t);
+    const mine=S.filter(s=>s.date>=t&&s.items&&s.items.some(it=>it.rid===r.id)).slice(0,2);
+    return `<div class="res-card" style="cursor:pointer" data-prof="${r.id}"><div class="row"><span class="lvl">R${r.level}</span><b style="flex:1">${esc(r.name)}</b><span class="note">${p.boardStart?"Board start "+fd(p.boardStart)+" "+dt(p.boardStart).getFullYear():""}</span><span class="note">›</span></div>
+    <div class="note" style="margin-top:4px"><b>Now:</b> ${now?esc(now.n):"—"}${(p.rot||[]).length?"":" (standard plan)"} · <b>Presenting next:</b> ${mine.length?mine.map(s=>fd(s.date)).join(", "):"—"}</div></div>`}).join("")+`</div>`;
+  h+=`<div class="row noprint" style="margin-top:12px"><button class="btn" id="promote">Move everyone to the next year</button></div><p class="note">Tap a resident to edit their details, rotations and history, or move them to the next year on their own.</p>`;
+  if((ST.graduates||[]).length)h+=`<h3>Graduates</h3><div class="panel">${ST.graduates.map(g=>`<div class="kv"><span>${esc(g.name)}</span><span>${g.boardStart?fd(g.boardStart)+" "+dt(g.boardStart).getFullYear()+" – ":""}${fdy(g.graduated)}</span></div>`).join("")}</div>`;
+  return h;
+}
+/* ================= theatre rota ================= */
+const TDAY=["Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"];
+let TWK=null;
+function satOf(d){const x=dt(d);x.setDate(x.getDate()-((x.getDay()+1)%7));return iso(x)}
+function TH(){ST.theatre=ST.theatre||{lists:[],weeks:{}};ST.theatre.lists=ST.theatre.lists||[];ST.theatre.weeks=ST.theatre.weeks||{};return ST.theatre}
+function vTheatre(){
+  const T=TH();if(!TWK)TWK=satOf(today());const W=T.weeks[TWK]||{};
+  let h=`<h2>Theatre rota</h2><div class="row noprint" style="margin-bottom:12px"><button class="btn" id="tprev">‹</button><b style="flex:1;text-align:center">${fd(TWK)} – ${fdy(addD(TWK,6))}</b><button class="btn" id="tnext">›</button></div>
+  <div class="row noprint" style="margin-bottom:12px"><button class="btn sm" id="tnow">This week</button><button class="btn sm" id="tcopy">Copy previous week</button><button class="btn sm" id="tshare">Share week</button><button class="btn sm" id="tlists">Theatre lists</button></div>`;
+  if(!T.lists.length)return h+`<div class="empty">Add your weekly theatre lists first (for example: Sunday, Main OR, Dr. …). Then assign residents to each list week by week.<br><br><button class="btn p" id="tlists2">Add theatre lists</button></div>`;
+  for(let d=0;d<7;d++){const L=T.lists.filter(l=>+l.day===d);if(!L.length)continue;const date=addD(TWK,d);
+    h+=`<h3>${TDAY[d]} <span class="note">${fd(date)}</span></h3><div class="panel">${L.map(l=>{const ids=W[l.id]||[];return `<div class="kv" style="align-items:center"><span>${esc(l.name)}${l.place?` <span class="note">${esc(l.place)}</span>`:""}<div style="font-weight:400;margin-top:4px">${ids.map(i=>resById(i)).filter(Boolean).map(r=>`<span class="tag">${esc(r.name)} R${r.level}</span>`).join(" ")||'<span class="note">Nobody assigned</span>'}</div></span><span><button class="btn sm noprint" data-tas="${l.id}">Assign</button></span></div>`}).join("")}</div>`}
+  const cnt={};Object.values(W).forEach(a=>a.forEach(i=>cnt[i]=(cnt[i]||0)+1));
+  h+=`<h3>Theatre sessions this week</h3><div class="panel">${sortedRes().map(r=>`<div class="kv"><span>${esc(r.name)} R${r.level}</span><span>${cnt[r.id]||0}</span></div>`).join("")||'<p class="note">No residents.</p>'}</div>`;
+  return h;
+}
+function listsSheet(){const T=TH();
+  const row=l=>`<div class="tl panel" data-id="${l.id}" style="margin-bottom:8px;padding:10px 12px"><div class="row"><select class="l_d" style="padding:7px;border:1px solid var(--line);border-radius:7px;background:var(--surface)">${TDAY.map((n,i)=>`<option value="${i}" ${+l.day===i?"selected":""}>${n}</option>`).join("")}</select><input class="l_n" value="${esc(l.name)}" placeholder="List, e.g. Main OR – Dr. X" style="flex:1;min-width:150px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface)"></div><div class="row" style="margin-top:6px"><input class="l_p" value="${esc(l.place||"")}" placeholder="Hospital or room (optional)" style="flex:1;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface)"><button class="btn sm d l_x">Delete</button></div></div>`;
+  openSheet(`<h3>Weekly theatre lists</h3><p class="note">The lists that repeat every week. Assign residents to them on the Theatre tab.</p><div id="tls">${T.lists.map(row).join("")}</div><div class="row"><button class="btn" id="l_add">+ Add list</button></div><div class="row" style="margin-top:12px"><button class="btn p" id="l_save">Save</button><button class="btn" id="l_cancel">Cancel</button></div>`);
+  const wire=()=>document.querySelectorAll(".l_x").forEach(b=>b.onclick=()=>b.closest(".tl").remove());wire();
+  $("#l_add").onclick=()=>{$("#tls").insertAdjacentHTML("beforeend",row({id:Math.random().toString(36).slice(2,8),day:1,name:"",place:""}));wire()};
+  $("#l_cancel").onclick=closeSheet;
+  $("#l_save").onclick=()=>{T.lists=[...document.querySelectorAll(".tl")].map(el=>({id:el.dataset.id,day:+el.querySelector(".l_d").value,name:el.querySelector(".l_n").value.trim(),place:el.querySelector(".l_p").value.trim()})).filter(l=>l.name);save();closeSheet();render()};
+}
+function assignSheet(lid){const T=TH();const l=T.lists.find(x=>x.id===lid);const W=T.weeks[TWK]||{};const cur=new Set(W[lid]||[]);
+  openSheet(`<h3>${esc(l.name)}</h3><div class="note">${TDAY[l.day]} ${fdy(addD(TWK,+l.day))}</div><div class="panel attl" style="margin-top:10px">${sortedRes().map(r=>{const now=rotAt(r,addD(TWK,+l.day));return `<label><input type="checkbox" data-ta="${r.id}" ${cur.has(r.id)?"checked":""}> ${esc(r.name)} <span class="note">R${r.level}${now?" · "+esc(now.n):""}</span></label>`}).join("")}</div><div class="row" style="margin-top:12px"><button class="btn p" id="ta_save">Save</button><button class="btn" id="ta_cancel">Cancel</button></div>`);
+  $("#ta_cancel").onclick=closeSheet;
+  $("#ta_save").onclick=()=>{const ids=[...document.querySelectorAll("[data-ta]")].filter(c=>c.checked).map(c=>c.dataset.ta);T.weeks[TWK]=Object.assign({},T.weeks[TWK]);if(ids.length)T.weeks[TWK][lid]=ids;else delete T.weeks[TWK][lid];save();closeSheet();render()};
+}
+function bindMore(){
+  const v=$("#view");
+  v.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editSession(b.dataset.edit));
+  const ax=$("#addsess");if(ax)ax.onclick=()=>extraSheet(null);
+  v.querySelectorAll("[data-prof]").forEach(b=>b.onclick=()=>profile(b.dataset.prof));
+  const T=()=>TH();
+  const tp=$("#tprev");if(tp)tp.onclick=()=>{TWK=addD(TWK,-7);render()};
+  const tn=$("#tnext");if(tn)tn.onclick=()=>{TWK=addD(TWK,7);render()};
+  const tw=$("#tnow");if(tw)tw.onclick=()=>{TWK=satOf(today());render()};
+  [$("#tlists"),$("#tlists2")].forEach(b=>{if(b)b.onclick=listsSheet});
+  v.querySelectorAll("[data-tas]").forEach(b=>b.onclick=()=>assignSheet(b.dataset.tas));
+  const tc=$("#tcopy");if(tc)tc.onclick=()=>{const prev=T().weeks[addD(TWK,-7)];if(!prev){toast("Previous week is empty");return}if(T().weeks[TWK]&&Object.keys(T().weeks[TWK]).length&&!confirm("Replace this week's assignments?"))return;T().weeks[TWK]=JSON.parse(JSON.stringify(prev));save();render()};
+  const ts=$("#tshare");if(ts)ts.onclick=async()=>{const W=T().weeks[TWK]||{};let txt=`${ST.name}\nTheatre rota: ${fd(TWK)} – ${fdy(addD(TWK,6))}\n`;
+    for(let d=0;d<7;d++){const L=T().lists.filter(l=>+l.day===d);if(!L.length)continue;txt+=`\n${TDAY[d]} ${fd(addD(TWK,d))}\n`;L.forEach(l=>{txt+=`  ${l.name}${l.place?" ("+l.place+")":""}: ${(W[l.id]||[]).map(i=>resById(i)).filter(Boolean).map(r=>r.name).join(", ")||"—"}\n`})}
+    try{if(navigator.share){await navigator.share({text:txt});return}}catch(e){if(e.name==="AbortError")return}try{await navigator.clipboard.writeText(txt);toast("Copied")}catch(e){prompt("Copy:",txt)}};
+}
+function theatreCount(id,a,b){const T=TH();let n=0;Object.entries(T.weeks).forEach(([wk,W])=>{T.lists.forEach(l=>{const d=addD(wk,+l.day);if(d>=a&&d<=b&&(W[l.id]||[]).includes(id))n++})});return n}
 
 start();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});

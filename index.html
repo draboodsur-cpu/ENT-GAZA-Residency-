@@ -736,6 +736,7 @@ function dutyIssues(m){
     oc.forEach(r=>{if(prev.includes(r.id))add(d,r.name+" is on 24 two days in a row")})});
   return out;
 }
+const H24=24,HAM=6;const dutyHours=k=>k.oc*H24+(k.am-k.oc)*HAM;
 function dutyCounts(m){const c={};const z=id=>c[id]=c[id]||{am:0,oc:0,fri:0};
   moDays(m).forEach(d=>{const x=dutyOf(d);x.am.forEach(id=>z(id).am++);x.oc.forEach(id=>{z(id).oc++;if(!x.am.includes(id))z(id).am++;if(isFri(d))z(id).fri++})});return c}
 const dutyTags=ids=>dutyNames(ids).map(r=>`<span class="tag" style="margin:0 4px 3px 0">${esc(r.name)} R${r.level}</span>`).join("")||'<span class="note">—</span>';
@@ -746,13 +747,13 @@ function vDuty(){
   <div class="row noprint" style="margin-bottom:12px"><button class="btn sm" id="dnow">This month</button>${VIEWER?"":`<button class="btn sm" id="drep">Repeat first week</button><button class="btn sm" id="dclear">Clear month</button>`}<button class="btn sm" id="dshare">Share month</button><button class="btn sm" id="dprint">Print</button><button class="btn sm" id="dcsv">Excel</button></div>
   <p class="note print-only" style="display:none">${esc(ST.name)} · Duty roster ${moName(DMO)}</p>`;
   if(!ST.residents.length)return h+`<div class="empty">Add residents on the Residents tab first.</div>`;
-  if(!VIEWER)h+=`<p class="note noprint" style="margin-top:0">Tap a day to choose the morning and 24 residents. 24 includes the morning. Fill the first week, then press Repeat first week to fill the rest of the month by weekday.</p>`;
+  if(!VIEWER)h+=`<p class="note noprint" style="margin-top:0">Tap a day to choose the morning and 24 residents. 24 includes the morning. Hours: 24 = 24 hours, morning = 6 hours. Fill the first week, then press Repeat first week to fill the rest of the month by weekday.</p>`;
   if(nIss)h+=`<div class="panel" style="border-color:var(--warn);margin-bottom:12px"><b style="color:var(--warn)">${nIss} thing${nIss===1?"":"s"} to check</b>${Object.entries(iss).map(([d,a])=>a.map(x=>`<div class="note" style="margin-top:4px">${dShort(d)}: ${esc(x)}</div>`).join("")).join("")}</div>`;
   h+=`<div class="panel" style="padding:4px 8px;overflow-x:auto"><table class="rep duty"><thead><tr><th style="width:64px">Day</th><th>Morning</th><th>24</th></tr></thead><tbody>`+days.map(d=>{const x=dutyOf(d);
     const bg=d===t?"background:var(--act-soft)":isFri(d)?"background:var(--bg)":"";
     return `<tr ${VIEWER?"":`data-dd="${d}" style="cursor:pointer;${bg}"`} ${VIEWER?`style="${bg}"`:""}><td><b>${dShort(d)}</b>${iss[d]?` <span style="color:var(--warn)" title="${esc(iss[d].join("; "))}">⚠</span>`:""}</td><td>${dutyTags(x.am)}</td><td>${dutyTags(x.oc)}${x.sp?`<div class="note">Specialist: ${esc(x.sp)}</div>`:""}</td></tr>`}).join("")+`</tbody></table></div>`;
   const c=dutyCounts(DMO);
-  h+=`<h3>Totals this month</h3><div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Resident</th><th>Days present<br><span class="note">mornings incl. 24</span></th><th>24</th><th>Fridays on 24</th></tr></thead><tbody>${sortedRes().map(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};return `<tr><td>${esc(r.name)} R${r.level}</td><td>${k.am}</td><td>${k.oc}</td><td>${k.fri}</td></tr>`}).join("")}</tbody></table></div>`;
+  h+=`<h3>Totals this month</h3><div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Resident</th><th>Days present<br><span class="note">mornings incl. 24</span></th><th>24</th><th>Fridays on 24</th><th>Hours</th></tr></thead><tbody>${sortedRes().map(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};return `<tr><td>${esc(r.name)} R${r.level}</td><td>${k.am}</td><td>${k.oc}</td><td>${k.fri}</td><td><b>${dutyHours(k)}</b></td></tr>`}).join("")}</tbody></table></div>`;
   return h;
 }
 function dutySheet(d){const x=dutyOf(d),prev=dutyOf(addD(d,-1)).oc,next=dutyOf(addD(d,1)).oc;
@@ -782,7 +783,7 @@ function bindDuty(){
   on("#dshare",()=>shareText(dutyText()));
   on("#dprint",()=>window.print());
   on("#dcsv",()=>{const rows=[["Date","Day","Morning","24","Specialist on call"]].concat(moDays(DMO).map(d=>{const x=dutyOf(d);return [d,DAY[dt(d).getDay()],dutyNames(x.am).map(r=>r.name).join(", "),dutyNames(x.oc).map(r=>r.name).join(", "),x.sp]}));
-    const c=dutyCounts(DMO);rows.push([],["Resident","Year","Days present (incl. 24)","24","Fridays on 24"]);sortedRes().forEach(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};rows.push([r.name,"R"+r.level,k.am,k.oc,k.fri])});
+    const c=dutyCounts(DMO);rows.push([],["Resident","Year","Days present (incl. 24)","24","Fridays on 24","Hours"]);sortedRes().forEach(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};rows.push([r.name,"R"+r.level,k.am,k.oc,k.fri,dutyHours(k)])});
     download(new Blob([csv(rows)],{type:"text/csv"}),"duty-roster-"+DMO+".csv")});
 }
 
@@ -808,7 +809,7 @@ function vMine(){
     else if(x.sp&&x.sp.trim().toLowerCase()===id.trim().toLowerCase()){what="24 (specialist)";n24++}
     if(what)rows.push([d,what])});
   h+=`<div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Day</th><th>Duty</th></tr></thead><tbody>${rows.map(([d,w])=>`<tr style="${d===t?"background:var(--act-soft)":""}"><td><b>${dShort(d)}</b></td><td>${w.startsWith("24")?`<b>${w}</b>`:w}</td></tr>`).join("")||`<tr><td colspan="2" class="note">No duties this month.</td></tr>`}</tbody></table></div>
-  <p class="note">${n24} × 24${isRes?" · "+nam+" mornings · "+(n24+nam)+" days in all":""}</p>`;
+  <p class="note">${n24} × 24${isRes?" · "+nam+" mornings · "+(n24+nam)+" days in all":""} · <b>${n24*H24+(isRes?nam*HAM:0)} hours</b></p>`;
   const nm=name.trim().toLowerCase();
   const L=lecSorted().filter(l=>l.date>=t&&(isRes?l.presenter===id:(l.presenterText||"").toLowerCase().includes(nm)||(l.notes||"").toLowerCase().includes(nm)));
   h+=`<h3>My lectures</h3><div class="panel">${L.map(l=>`<div class="kv"><span>${esc(l.title)}<div class="note">${esc(l.type||"")}${l.ref?" · "+esc(l.ref):""}</div></span><span>${fd(l.date)} ${esc(l.time||"")}</span></div>`).join("")||'<p class="note">No upcoming lectures for you.</p>'}</div>`;

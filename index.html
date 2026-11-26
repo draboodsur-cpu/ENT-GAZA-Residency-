@@ -428,6 +428,7 @@ function seedTables(){
   ["lectures","exams","rotTypes","graduates","logbook","evals"].forEach(k=>{if(!Array.isArray(ST[k]))ST[k]=[]});
   ["scores","att","rot","rp"].forEach(k=>{if(!ST[k]||typeof ST[k]!=="object")ST[k]={}});
   if(!ST.theatre)ST.theatre={lists:[],weeks:{}};
+  {const T=TH();if(!T.seeded){[[2,"Monday theatre"],[4,"Wednesday theatre"],[6,"Friday theatre"]].forEach(([d,n])=>{if(!T.lists.some(l=>+l.day===d))T.lists.push({id:uid(),day:d,name:n,place:""})});T.seeded=true}}
   if(!ST.yearStart){const d=new Date();ST.yearStart=iso(new Date(d.getMonth()>=8?d.getFullYear():d.getFullYear()-1,8,1))}
 }
 /* ================= shared UI ================= */
@@ -454,8 +455,8 @@ function rotAt(r,date){const b=blocksOf(r.id).find(x=>x.from<=date&&date<=x.to);
 function rpOf(r){if(!ST.rp[r.id])ST.rp[r.id]={boardStart:"",since:"",phone:"",email:"",notes:"",hist:[]};return ST.rp[r.id]}
 
 /* ================= router ================= */
-const VIEWER_TABS=["mine","week","lectures","exams","duty","log","reqs","assess","conduct"];
-const viewerTabs=()=>MYTR?["mine","week","lectures","exams","duty","log","assess"].concat(cmList().includes(MYTR)?["conduct"]:[]):MYRID?VIEWER_TABS:["mine","week","lectures","exams","duty"];
+const VIEWER_TABS=["mine","week","lectures","exams","duty","theatre","log","reqs","assess","conduct"];
+const viewerTabs=()=>MYTR?["mine","week","lectures","exams","duty","theatre","log","assess"].concat(cmList().includes(MYTR)?["conduct"]:[]):MYRID?VIEWER_TABS:["mine","week","lectures","exams","duty","theatre"];
 let TAB=location.hash.slice(1)||"week";
 function go(t){TAB=t;location.hash=t;render()}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
@@ -698,34 +699,55 @@ function promote(r,grad){const p=rpOf(r);p.hist=p.hist||[];p.hist.push({level:r.
 
 /* ================= theatre rota ================= */
 const TDAY=["Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday"];
-let TWK=null;
 function satOf(d){const x=dt(d);x.setDate(x.getDate()-((x.getDay()+1)%7));return iso(x)}
 function TH(){ST.theatre=ST.theatre||{lists:[],weeks:{}};ST.theatre.lists=ST.theatre.lists||[];ST.theatre.weeks=ST.theatre.weeks||{};return ST.theatre}
+let TMO=null;
+const tIdx=d=>(dt(d).getDay()+1)%7;
+const tAssigned=(date,lid)=>((TH().weeks[satOf(date)]||{})[lid])||[];
+function tSet(date,lid,ids){const T=TH(),wk=satOf(date);T.weeks[wk]=Object.assign({},T.weeks[wk]);if(ids.length)T.weeks[wk][lid]=ids;else delete T.weeks[wk][lid];if(!Object.keys(T.weeks[wk]).length)delete T.weeks[wk]}
+const tDays=m=>moDays(m).filter(d=>TH().lists.some(l=>+l.day===tIdx(d)));
+function theatreOf(id,m){const out=[];tDays(m).forEach(d=>TH().lists.filter(l=>+l.day===tIdx(d)).forEach(l=>{if(tAssigned(d,l.id).includes(id))out.push([d,l])}));return out}
 function vTheatre(){
-  const T=TH();if(!TWK)TWK=satOf(today());const W=T.weeks[TWK]||{};
-  let h=`<h2>Theatre rota</h2><div class="row noprint" style="margin-bottom:12px"><button class="btn" id="tprev">‹</button><b style="flex:1;text-align:center">${fd(TWK)} – ${fdy(addD(TWK,6))}</b><button class="btn" id="tnext">›</button></div>
-  <div class="row noprint" style="margin-bottom:12px"><button class="btn sm" id="tnow">This week</button><button class="btn sm" id="tcopy">Copy previous week</button><button class="btn sm" id="tshare">Share week</button><button class="btn sm" id="tlists">Theatre lists</button></div>`;
-  if(!T.lists.length)return h+`<div class="empty">Add your weekly theatre lists first (for example: Sunday, Main OR, Dr. …). Then assign residents to each list week by week.<br><br><button class="btn p" id="tlists2">Add theatre lists</button></div>`;
-  for(let d=0;d<7;d++){const L=T.lists.filter(l=>+l.day===d);if(!L.length)continue;const date=addD(TWK,d);
-    h+=`<h3>${TDAY[d]} <span class="note">${fd(date)}</span></h3><div class="panel">${L.map(l=>{const ids=W[l.id]||[];return `<div class="kv" style="align-items:center"><span>${esc(l.name)}${l.place?` <span class="note">${esc(l.place)}</span>`:""}<div style="font-weight:400;margin-top:4px">${ids.map(i=>resById(i)).filter(Boolean).map(r=>`<span class="tag">${esc(r.name)} R${r.level}</span>`).join(" ")||'<span class="note">Nobody assigned</span>'}</div></span><span><button class="btn sm noprint" data-tas="${l.id}">Assign</button></span></div>`}).join("")}</div>`}
-  const cnt={};Object.values(W).forEach(a=>a.forEach(i=>cnt[i]=(cnt[i]||0)+1));
-  h+=`<h3>Theatre sessions this week</h3><div class="panel">${sortedRes().map(r=>`<div class="kv"><span>${esc(r.name)} R${r.level}</span><span>${cnt[r.id]||0}</span></div>`).join("")||'<p class="note">No residents.</p>'}</div>`;
+  const T=TH();if(!TMO)TMO=today().slice(0,7);const t=today();
+  let h=`<h2>Theatre</h2><div class="row noprint" style="margin-bottom:12px"><button class="btn" id="tprev">‹</button><b style="flex:1;text-align:center">${moName(TMO)}</b><button class="btn" id="tnext">›</button></div>
+  <div class="row noprint" style="margin-bottom:12px"><button class="btn sm" id="tnow">This month</button>${VIEWER?"":'<button class="btn sm" id="trep">Repeat first week</button><button class="btn sm" id="tlists">Theatre days</button>'}<button class="btn sm" id="tshare">Share month</button><button class="btn sm" onclick="window.print()">Print</button></div>
+  <p class="note print-only" style="display:none">${esc(ST.name)} · Theatre ${moName(TMO)}</p>`;
+  if(!T.lists.length)return h+(VIEWER?`<div class="empty">No theatre days yet.</div>`:`<div class="empty">Add your theatre days first.<br><br><button class="btn p" id="tlists2">Add theatre days</button></div>`);
+  if(!VIEWER)h+=`<p class="note noprint" style="margin-top:0">Tap a day to choose who goes to theatre. Fill the first week, then Repeat first week copies it to the rest of the month by weekday.</p>`;
+  h+=`<div class="panel" style="padding:4px 8px;overflow-x:auto"><table class="rep duty"><thead><tr><th style="width:64px">Day</th><th>List</th><th>Residents</th></tr></thead><tbody>`;
+  tDays(TMO).forEach(d=>T.lists.filter(l=>+l.day===tIdx(d)).forEach(l=>{const ids=tAssigned(d,l.id);const x=dutyOf(d);
+    const warn=ids.filter(i=>dutyOf(addD(d,-1)).oc.includes(i)&&!x.am.includes(i)&&!x.oc.includes(i)).map(resById).filter(Boolean);
+    h+=`<tr ${VIEWER?"":`data-tas="${l.id}|${d}" style="cursor:pointer;${d===t?"background:var(--act-soft)":""}"`}><td><b>${dShort(d)}</b></td><td>${esc(l.name)}${l.place?`<div class="note">${esc(l.place)}</div>`:""}</td><td>${dutyTags(ids)}${warn.length?`<div class="note" style="color:var(--warn)">${warn.map(r=>esc(r.name)).join(", ")}: after a 24</div>`:""}</td></tr>`}));
+  h+=`</tbody></table></div>`;
+  const cnt={};tDays(TMO).forEach(d=>T.lists.filter(l=>+l.day===tIdx(d)).forEach(l=>tAssigned(d,l.id).forEach(i=>cnt[i]=(cnt[i]||0)+1)));
+  h+=`<h3>Theatre days this month</h3><div class="panel" style="padding:4px 8px"><table class="rep"><tbody>${sortedRes().map(r=>`<tr><td>${esc(r.name)} R${r.level}</td><td class="n"><b>${cnt[r.id]||0}</b></td></tr>`).join("")}</tbody></table></div>`;
   return h;
 }
 function listsSheet(){const T=TH();
-  const row=l=>`<div class="tl panel" data-id="${l.id}" style="margin-bottom:8px;padding:10px 12px"><div class="row"><select class="l_d" style="padding:7px;border:1px solid var(--line);border-radius:7px;background:var(--surface)">${TDAY.map((n,i)=>`<option value="${i}" ${+l.day===i?"selected":""}>${n}</option>`).join("")}</select><input class="l_n" value="${esc(l.name)}" placeholder="List, e.g. Main OR – Dr. X" style="flex:1;min-width:150px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface)"></div><div class="row" style="margin-top:6px"><input class="l_p" value="${esc(l.place||"")}" placeholder="Hospital or room (optional)" style="flex:1;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface)"><button class="btn sm d l_x">Delete</button></div></div>`;
-  openSheet(`<h3>Weekly theatre lists</h3><p class="note">The lists that repeat every week. Assign residents to them on the Theatre tab.</p><div id="tls">${T.lists.map(row).join("")}</div><div class="row"><button class="btn" id="l_add">+ Add list</button></div><div class="row" style="margin-top:12px"><button class="btn p" id="l_save">Save</button><button class="btn" id="l_cancel">Cancel</button></div>`);
+  const row=l=>`<div class="tl panel" data-id="${l.id}" style="margin-bottom:8px;padding:10px 12px"><div class="row"><select class="l_d f2" style="width:auto">${TDAY.map((n,i)=>`<option value="${i}" ${+l.day===i?"selected":""}>${n}</option>`).join("")}</select><input class="l_n f2" style="flex:1;min-width:120px" value="${esc(l.name)}" placeholder="e.g. Main theatre"><input class="l_p f2" style="flex:1;min-width:100px" value="${esc(l.place||"")}" placeholder="Place (optional)"><button class="btn sm d l_x">×</button></div></div>`;
+  openSheet(`<h3>Theatre days</h3><p class="note">The theatre lists that repeat every week.</p><div id="tls">${T.lists.map(row).join("")}</div><div class="row"><button class="btn" id="l_add">+ Add day</button></div><div class="row" style="margin-top:12px"><button class="btn p" id="l_save">Save</button><button class="btn" id="l_cancel">Cancel</button></div>`);
   const wire=()=>document.querySelectorAll(".l_x").forEach(b=>b.onclick=()=>b.closest(".tl").remove());wire();
-  $("#l_add").onclick=()=>{$("#tls").insertAdjacentHTML("beforeend",row({id:Math.random().toString(36).slice(2,8),day:1,name:"",place:""}));wire()};
+  $("#l_add").onclick=()=>{$("#tls").insertAdjacentHTML("beforeend",row({id:Math.random().toString(36).slice(2,8),day:2,name:"Theatre",place:""}));wire()};
   $("#l_cancel").onclick=closeSheet;
   $("#l_save").onclick=()=>{T.lists=[...document.querySelectorAll(".tl")].map(el=>({id:el.dataset.id,day:+el.querySelector(".l_d").value,name:el.querySelector(".l_n").value.trim(),place:el.querySelector(".l_p").value.trim()})).filter(l=>l.name);save();closeSheet();render()};
 }
-function assignSheet(lid){const T=TH();const l=T.lists.find(x=>x.id===lid);const W=T.weeks[TWK]||{};const cur=new Set(W[lid]||[]);
-  openSheet(`<h3>${esc(l.name)}</h3><div class="note">${TDAY[l.day]} ${fdy(addD(TWK,+l.day))}</div><div class="panel attl" style="margin-top:10px">${sortedRes().map(r=>{const now=rotAt(r,addD(TWK,+l.day));return `<label><input type="checkbox" data-ta="${r.id}" ${cur.has(r.id)?"checked":""}> ${esc(r.name)} <span class="note">R${r.level}${now?" · "+esc(now.n):""}</span></label>`}).join("")}</div><div class="row" style="margin-top:12px"><button class="btn p" id="ta_save">Save</button><button class="btn" id="ta_cancel">Cancel</button></div>`);
+function assignSheet(key){const [lid,date]=key.split("|");const T=TH();const l=T.lists.find(x=>x.id===lid);if(!l)return;const cur=new Set(tAssigned(date,lid));const x=dutyOf(date),prev=dutyOf(addD(date,-1)).oc;
+  openSheet(`<h3>${esc(l.name)}</h3><div class="note">${fdw(date)}</div><div class="panel attl" style="margin-top:10px">${sortedRes().map(r=>{const now=rotAt(r,date);const tag=x.oc.includes(r.id)?"on 24":x.am.includes(r.id)?"morning":prev.includes(r.id)?'<span style="color:var(--warn)">after a 24</span>':"";return `<label><input type="checkbox" data-ta="${r.id}" ${cur.has(r.id)?"checked":""}> ${esc(r.name)} <span class="note">R${r.level}${tag?" · "+tag:""}${now?" · "+esc(now.n):""}</span></label>`}).join("")}</div>
+  <div class="row" style="margin-top:12px"><button class="btn p" id="ta_save">Save</button><button class="btn" id="ta_cancel">Cancel</button></div>`);
   $("#ta_cancel").onclick=closeSheet;
-  $("#ta_save").onclick=()=>{const ids=[...document.querySelectorAll("[data-ta]")].filter(c=>c.checked).map(c=>c.dataset.ta);T.weeks[TWK]=Object.assign({},T.weeks[TWK]);if(ids.length)T.weeks[TWK][lid]=ids;else delete T.weeks[TWK][lid];save();closeSheet();render()};
+  $("#ta_save").onclick=()=>{tSet(date,lid,[...document.querySelectorAll("[data-ta]")].filter(c=>c.checked).map(c=>c.dataset.ta));save();closeSheet();rerender()};
 }
 function theatreCount(id,a,b){const T=TH();let n=0;Object.entries(T.weeks).forEach(([wk,W])=>{T.lists.forEach(l=>{const d=addD(wk,+l.day);if(d>=a&&d<=b&&(W[l.id]||[]).includes(id))n++})});return n}
+function theatreText(){const T=TH();let txt=`${ST.name}\nTheatre: ${moName(TMO)}\n`;tDays(TMO).forEach(d=>T.lists.filter(l=>+l.day===tIdx(d)).forEach(l=>{txt+=`\n${fdw(d)} · ${l.name}: ${tAssigned(d,l.id).map(resById).filter(Boolean).map(r=>r.name).join(", ")||"—"}`}));return txt}
+function bindTheatre(){const on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};
+  on("#tprev",()=>{TMO=addMo(TMO,-1);rerender()});on("#tnext",()=>{TMO=addMo(TMO,1);rerender()});on("#tnow",()=>{TMO=today().slice(0,7);rerender()});
+  on("#tlists",listsSheet);on("#tlists2",listsSheet);
+  $$("[data-tas]").forEach(b=>b.onclick=()=>assignSheet(b.dataset.tas));
+  on("#tshare",()=>shareText(theatreText()));
+  on("#trep",()=>{const T=TH(),days=moDays(TMO),first=days.slice(0,7);if(!first.some(d=>T.lists.some(l=>+l.day===tIdx(d)&&tAssigned(d,l.id).length))){toast("Fill the first week first");return}
+    if(days.slice(7).some(d=>T.lists.some(l=>+l.day===tIdx(d)&&tAssigned(d,l.id).length))&&!confirm("Replace days 8 to "+days.length+" with the first week's pattern?"))return;
+    days.slice(7).forEach((d,i)=>{const src=first[i%7];T.lists.filter(l=>+l.day===tIdx(d)).forEach(l=>tSet(d,l.id,tAssigned(src,l.id).slice()))});save();toast("Month filled");rerender()});
+}
 
 /* ================= duty roster (monthly) ================= */
 let DMO=null;
@@ -818,6 +840,7 @@ function vMine(){
   moDays(MMO).forEach(d=>{const x=dutyOf(d);let what="";
     if(isRes){if(x.oc.includes(id)){what="24";n24++}else if(x.am.includes(id)){what="Morning";nam++}}
     else if(x.sp&&x.sp.trim().toLowerCase()===id.trim().toLowerCase()){what="24 (specialist)";n24++}
+    if(isRes&&theatreOf(id,MMO).some(([td])=>td===d))what=what?what+" + Theatre":"Theatre";
     if(what)rows.push([d,what])});
   h+=`<div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Day</th><th>Duty</th></tr></thead><tbody>${rows.map(([d,w])=>`<tr style="${d===t?"background:var(--act-soft)":""}"><td><b>${dShort(d)}</b></td><td>${w.startsWith("24")?`<b>${w}</b>`:w}</td></tr>`).join("")||`<tr><td colspan="2" class="note">No duties this month.</td></tr>`}</tbody></table></div>
   <div class="row noprint" style="margin:8px 0"><button class="btn sm" id="mics">Add to my calendar</button>${VIEWER&&isRes&&id===MYRID?'<button class="btn sm" id="golog">Log a case</button><button class="btn sm" id="goreq">Ask for leave or a swap</button>':""}</div>
@@ -1223,6 +1246,7 @@ function icsFor(k,m){const isRes=k.startsWith("r:"),id=k.slice(2),t=today();cons
   moDays(m).forEach(d=>{const x=dutyOf(d);
     if(isRes){if(x.oc.includes(id))add("d"+d+id,d,8,addD(d,1),8,"24 duty",x.sp?"Specialist: "+x.sp:"");else if(x.am.includes(id))add("m"+d+id,d,8,d,14,"Morning duty","")}
     else if(x.sp&&x.sp.trim().toLowerCase()===id.trim().toLowerCase())add("s"+d+id.replace(/\W/g,""),d,8,addD(d,1),8,"24 duty (specialist)","")});
+  if(isRes)theatreOf(id,m).forEach(([d,l])=>add("t"+d+l.id+id,d,8,d,14,"Theatre: "+l.name,l.place||""));
   if(isRes){const r=resById(id);lecSorted().filter(l=>l.date>=t&&l.presenter===id).forEach(l=>{const h=+(l.time||"12:00").split(":")[0];add("l"+l.id,l.date,h,l.date,h+1,"Lecture: "+l.title,l.ref||"")});
     examSorted().filter(e=>e.date>=t&&examFor(e,r)).forEach(e=>{const h=+(e.time||"09:00").split(":")[0];add("e"+e.id,e.date,h,e.date,h+2,"Exam: "+e.name,e.topics||"")})}
   return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//ENT Residency//EN","CALSCALE:GREGORIAN","X-WR-CALNAME:"+icsEsc(ST.name)].concat(ev,["END:VCALENDAR"]).join("\r\n")}
@@ -1326,11 +1350,6 @@ function bind(){
   on("#promote",()=>{if(!confirm("Move every resident up one year? Their history keeps the previous year."))return;ST.residents.forEach(r=>promote(r,false));save();toast("Done");rerender()});
   v.querySelectorAll("[data-ungrad]").forEach(b=>b.onclick=()=>{const g=ST.graduates.find(x=>x.id===b.dataset.ungrad);ST.graduates=ST.graduates.filter(x=>x!==g);ST.residents.push({id:g.id,name:g.name,level:g.level||5});save();rerender()});
   // theatre
-  on("#tprev",()=>{TWK=addD(TWK,-7);rerender()});on("#tnext",()=>{TWK=addD(TWK,7);rerender()});on("#tnow",()=>{TWK=satOf(today());rerender()});
-  on("#tlists",listsSheet);on("#tlists2",listsSheet);
-  v.querySelectorAll("[data-tas]").forEach(b=>b.onclick=()=>assignSheet(b.dataset.tas));
-  on("#tcopy",()=>{const T=TH(),prev=T.weeks[addD(TWK,-7)];if(!prev){toast("Previous week is empty");return}if(T.weeks[TWK]&&Object.keys(T.weeks[TWK]).length&&!confirm("Replace this week?"))return;T.weeks[TWK]=JSON.parse(JSON.stringify(prev));save();rerender()});
-  on("#tshare",()=>{const T=TH(),W=T.weeks[TWK]||{};let txt=`${ST.name}\nTheatre rota: ${fd(TWK)} – ${fdy(addD(TWK,6))}\n`;for(let d=0;d<7;d++){const L=T.lists.filter(l=>+l.day===d);if(!L.length)continue;txt+=`\n${TDAY[d]} ${fd(addD(TWK,d))}\n`;L.forEach(l=>{txt+=`  ${l.name}${l.place?" ("+l.place+")":""}: ${(W[l.id]||[]).map(resById).filter(Boolean).map(r=>r.name).join(", ")||"—"}\n`})}shareText(txt)});
   // reports
   v.querySelectorAll("[data-rp]").forEach(b=>b.onclick=()=>{const k=b.dataset.rp;let a,bb;if(k==="this")[a,bb]=monthRange(0);else if(k==="last")[a,bb]=monthRange(-1);else if(k==="year"){a=ST.yearStart;bb=addD(addM(ST.yearStart,12),-1)}else{a=REP.a;bb=REP.b}REP={a,b:bb,mode:k};rerender()});
   on("#rgo",()=>{const a=$("#ra").value,b=$("#rb").value;if(a&&b&&a<=b){REP={a,b,mode:"custom"};rerender()}else toast("Choose a valid period")});
@@ -1347,6 +1366,7 @@ function bind(){
   on("#bexp",()=>{const d=JSON.parse(JSON.stringify(ST));delete d.pinHash;delete d.pinSalt;download(new Blob([JSON.stringify(d,null,1)],{type:"application/json"}),"ent-program-backup-"+today()+".json")});
   const bi=$("#bimp");if(bi)bi.onchange=async()=>{const f=bi.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!confirm("Replace everything with this backup?"))return;const keep={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};ST=Object.assign({},DEF,d,keep);migrate();seedTables();save();toast("Imported");render()}catch(e){toast("That file could not be read")}};
   bindDuty();
+  bindTheatre();
   bindPhase1();
   bindPhase2();
   bindConduct();
@@ -1376,18 +1396,22 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 const FBV="10.12.2",FB="https://www.gstatic.com/firebasejs/"+FBV+"/";
 let LIVE=null; // {auth,db,fs,user,role,unsub:[]}
 let CFG=null,pendingRender=false,writeT=null,lastWrite=0;
-const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime","duty","who","trainers","procs","conductCm"];
-const PRIVATE_KEYS=["scores","att","rotTypes","rot","rp","graduates","theatre","frame","lecTypes","examTypes","yearStart","logbook","evals"];
+const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime","duty","who","trainers","procs","conductCm","theatre"];
+const PRIVATE_KEYS=["scores","att","rotTypes","rot","rp","graduates","frame","lecTypes","examTypes","yearStart","logbook","evals"];
 function pick(o,keys){const r={};keys.forEach(k=>{if(o[k]!==undefined)r[k]=o[k]});return r}
 function isEditing(){const a=document.activeElement;return $("#scrim").classList.contains("open")||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))}
 function liveRender(){if(isEditing()){pendingRender=true;return}pendingRender=false;rerender()}
 document.addEventListener("focusout",()=>setTimeout(()=>{if(pendingRender&&!isEditing())liveRender()},300));
+const PUSHED={pub:{},prv:{}};
+async function pushDoc(ref,keys,cache){const {fs}=LIVE,ch={};keys.forEach(k=>{if(ST[k]===undefined)return;const j=JSON.stringify(ST[k]);if(cache[k]!==j)ch[k]=JSON.parse(j)});
+  if(!Object.keys(ch).length)return;try{await fs.updateDoc(ref,ch)}catch(e){if(e.code==="not-found")await fs.setDoc(ref,ch);else throw e}
+  Object.keys(ch).forEach(k=>cache[k]=JSON.stringify(ch[k]))}
+function markPushed(cache,d){Object.keys(d||{}).forEach(k=>cache[k]=JSON.stringify(d[k]))}
 function pushLive(){
   if(!LIVE||LIVE.role!=="admin")return;
   clearTimeout(writeT);writeT=setTimeout(async()=>{
     const {fs,db}=LIVE;lastWrite=Date.now();
-    try{await fs.setDoc(fs.doc(db,"program","public"),JSON.parse(JSON.stringify(pick(ST,PUBLIC_KEYS))));
-        await fs.setDoc(fs.doc(db,"program","private"),JSON.parse(JSON.stringify(pick(ST,PRIVATE_KEYS))));setSync("Saved to the cloud")}
+    try{await pushDoc(fs.doc(db,"program","public"),PUBLIC_KEYS,PUSHED.pub);await pushDoc(fs.doc(db,"program","private"),PRIVATE_KEYS,PUSHED.prv);setSync("Saved to the cloud")}
     catch(e){setSync("Saving failed: "+(e.code||e.message))}
   },500);
 }
@@ -1434,14 +1458,14 @@ async function resolveRole(){
   const pubRef=fs.doc(db,"program","public"),prvRef=fs.doc(db,"program","private");
   if(role==="admin"){
     const pub=await fs.getDoc(pubRef).catch(()=>null),prv=await fs.getDoc(prvRef).catch(()=>null);
-    const pd=pub&&pub.exists()?pub.data():null,vd=prv&&prv.exists()?prv.data():null;
+    const pd=pub&&pub.exists()?pub.data():null,vd=prv&&prv.exists()?prv.data():null;markPushed(PUSHED.pub,pd);markPushed(PUSHED.prv,vd);
     if(!pd){migrate();seedTables();await pushNow();toast("Your program was uploaded to the cloud")}
-    else{const local={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};const keep={};["logbook","evals"].forEach(k=>{if((!vd||vd[k]===undefined)&&Array.isArray(ST[k])&&ST[k].length)keep[k]=ST[k]});ST=Object.assign({},DEF,pd,vd||{},local,keep);if(Object.keys(keep).length||pd.procs===undefined||pd.conductCm===undefined)setTimeout(()=>pushLive(),800);
+    else{const local={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};const keep={};["logbook","evals"].forEach(k=>{if((!vd||vd[k]===undefined)&&Array.isArray(ST[k])&&ST[k].length)keep[k]=ST[k]});ST=Object.assign({},DEF,pd,vd||{},local,keep);PUBLIC_KEYS.forEach(k=>{if(pd[k]!==undefined)ST[k]=pd[k]});if(Object.keys(keep).length||pd.procs===undefined||pd.conductCm===undefined||pd.theatre===undefined)setTimeout(()=>pushLive(),800);
       if(migrate()){seedTables();await pushNow();toast("Program updated to the new version")}else seedTables();saveLocal()}
-    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data();if(!d||s.metadata.hasPendingWrites)return;PRIVATE_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});seedTables();saveLocal();liveRender();if(["logbook","evals"].some(k=>d[k]===undefined&&ST[k]&&ST[k].length))pushLive()}));
+    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data();if(!d||s.metadata.hasPendingWrites)return;markPushed(PUSHED.prv,d);PRIVATE_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});seedTables();saveLocal();liveRender();if(["logbook","evals"].some(k=>d[k]===undefined&&ST[k]&&ST[k].length))pushLive()}));
     LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","lists"),s=>{LIVE.lists=s.data()||{admins:[],viewers:[]};syncRes();if(TAB==="settings")liveRender()},()=>{}));
-  }else{ST.scores={};ST.att={};ST.rot={};ST.rp={};ST.rotTypes=[];ST.theatre={lists:[],weeks:{}};ST.graduates=[];ST.frame=[];ST.logbook=[];ST.evals=[]}
-  LIVE.unsub.push(fs.onSnapshot(pubRef,s=>{const d=s.data();if(d&&!(s.metadata.hasPendingWrites&&!VIEWER)){PUBLIC_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});["lectures","exams","residents"].forEach(k=>{if(!Array.isArray(ST[k]))ST[k]=[]});if(!VIEWER)saveLocal()}
+  }else{ST.scores={};ST.att={};ST.rot={};ST.rp={};ST.rotTypes=[];ST.graduates=[];ST.frame=[];ST.logbook=[];ST.evals=[]}
+  LIVE.unsub.push(fs.onSnapshot(pubRef,s=>{const d=s.data();if(d&&!(s.metadata.hasPendingWrites&&!VIEWER)){markPushed(PUSHED.pub,d);PUBLIC_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});["lectures","exams","residents"].forEach(k=>{if(!Array.isArray(ST[k]))ST[k]=[]});if(!VIEWER)saveLocal()}
     setSync(s.metadata.hasPendingWrites?"Waiting for internet to save…":"Up to date");if(VIEWER)subRecs();liveRender()}));
   if(!VIEWER)subRecs();
   if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="week";

@@ -180,12 +180,22 @@ select.f2,input.f2,textarea.f2{width:100%;padding:8px 10px;border:1px solid var(
 [dir=rtl] table.mx td.tg{text-align:left;padding-right:0;padding-left:4px}
 [dir=rtl] .bar div{border-right:0;border-left:2px solid var(--surface)}
 [dir=rtl] ol{padding-left:0!important;padding-right:18px}
+.hello{background:linear-gradient(135deg,#24324A,#3B5BDB);color:#fff;border-radius:18px;padding:20px 18px 16px;margin:4px 0 14px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.hello .hi-g{font-size:.95rem;opacity:.9}
+.hello .hi-n{font-size:1.9rem;font-weight:800;line-height:1.25;margin:6px 0 8px}
+.hello .hi-l{margin:0 0 12px;font-size:1rem;opacity:.95;line-height:1.5}
+.hello .hi-q{margin:0;padding-top:10px;border-top:1px solid rgba(255,255,255,.25);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:600;text-align:start;cursor:pointer;min-height:92px}
+.tile:active{transform:scale(.98)}
+.tile .ic{font-size:1.6rem;line-height:1}
+.tile .tl-n{position:absolute;top:10px;inset-inline-end:10px;background:#B42318;color:#fff;border-radius:999px;font-size:.75rem;padding:1px 8px}
 </style>
 </head>
 <body>
 <header class="app"><div class="in"><h1 id="pname">ENT Residency Program</h1><p id="psub"></p></div>
 <nav class="tabs" role="tablist">
- <button data-t="mine">My schedule</button><button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="reqs">Requests</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="log">Logbook</button><button data-t="assess">Assessments</button><button data-t="conduct">Conduct</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
+ <button data-t="home">Home</button><button data-t="mine">My schedule</button><button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="reqs">Requests</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="log">Logbook</button><button data-t="assess">Assessments</button><button data-t="conduct">Conduct</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
 </nav></header>
 <main id="view"></main>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
@@ -467,24 +477,51 @@ function rotAt(r,date){const b=blocksOf(r.id).find(x=>x.from<=date&&date<=x.to);
 function rpOf(r){if(!ST.rp[r.id])ST.rp[r.id]={boardStart:"",since:"",phone:"",email:"",notes:"",hist:[]};return ST.rp[r.id]}
 
 /* ================= router ================= */
-const VIEWER_TABS=["mine","week","lectures","exams","duty","theatre","log","reqs","assess","conduct"];
-const viewerTabs=()=>MYTR?["mine","week","lectures","exams","duty","theatre","log","assess"].concat(cmList().includes(MYTR)?["conduct"]:[]):MYRID?VIEWER_TABS:["mine","week","lectures","exams","duty","theatre"];
-let TAB=location.hash.slice(1)||"week";
+const VIEWER_TABS=["home","mine","week","lectures","exams","duty","theatre","log","reqs","assess","conduct"];
+const viewerTabs=()=>MYTR?["home","mine","week","lectures","exams","duty","theatre","log","assess"].concat(cmList().includes(MYTR)?["conduct"]:[]):MYRID?VIEWER_TABS:["home","mine","week","lectures","exams","duty","theatre"];
+let TAB="home";
 function go(t){TAB=t;location.hash=t;render()}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
-window.addEventListener("hashchange",()=>{TAB=location.hash.slice(1)||"week";render()});
+window.addEventListener("hashchange",()=>{TAB=location.hash.slice(1)||"home";render()});
 function render(){
   if(typeof pendingRender!=="undefined")pendingRender=false;
   $("#pname").innerHTML=esc(ST.name)+(VIEWER?'<span class="viewer-tag">view only</span>':"");
   const up=ST.lectures.filter(l=>l.date>=today()).length;
   $("#psub").textContent=`${ST.residents.length} resident${ST.residents.length===1?"":"s"} · ${ST.lectures.length} lectures (${up} upcoming) · ${ST.exams.length} exams`;
-  if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="week";
+  if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="home";
   const PN=VIEWER&&!MYTR?{log:0,reqs:0}:pendN();
   $$("nav.tabs button").forEach(b=>{if(!b.dataset.l)b.dataset.l=b.textContent;const n=PN[b.dataset.t];b.textContent=b.dataset.l+(n?" ("+n+")":"");b.setAttribute("aria-selected",b.dataset.t===TAB);b.style.display=VIEWER&&!viewerTabs().includes(b.dataset.t)?"none":""});
-  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,log:vLog,assess:vEval,conduct:vConduct,reqs:vReqs,frame:vFrame,settings:vSettings}[TAB]||vWeek;
+  const V={home:vHome,week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,log:vLog,assess:vEval,conduct:vConduct,reqs:vReqs,frame:vFrame,settings:vSettings}[TAB]||vWeek;
   const y=window.scrollY;$("#view").innerHTML=V();bind();if(render.keep){window.scrollTo(0,y);render.keep=false}else window.scrollTo(0,0);
 }
 function rerender(){render.keep=true;render()}
+/* ================= home (welcome) ================= */
+function myName(){
+  if(MYRID){const r=resById(MYRID);if(r){const f=r.name.trim().split(/\s+/)[0];return (LANG==="ar"?"د. ":"Dr. ")+f.charAt(0).toUpperCase()+f.slice(1)}}
+  const dr=s=>LANG==="ar"?s.replace(/^Dr\.?\s*/i,"د. "):s;
+  if(MYTR)return dr(MYTR);
+  const k=MYHASH?WHO()[MYHASH]||"":"";if(k.startsWith("t:"))return dr(k.slice(2));
+  return ""}
+const HELLO_LINES=["We wish you a productive and successful day.","Every case today is a step closer to being the surgeon you want to be.","Glad to have you with us. Have a great day.","Your effort today builds your skills for tomorrow.","Good to see you. Wishing you a smooth day in the department.","Learn something new today, and teach someone else.","Thank you for your hard work and commitment."];
+function vHome(){
+  const t=today(),PN=VIEWER&&!MYTR?{}:pendN(),nm=myName();
+  const tile=(tab,ic,label,n)=>`<button class="tile" data-go="${tab}"><span class="ic">${ic}</span><span class="tl-l">${label}</span>${n?`<span class="tl-n">${n}</span>`:""}</button>`;
+  let today_="";
+  if(MYRID){const x=dutyOf(t),th=theatreOf(MYRID,t.slice(0,7)).filter(([d])=>d===t).map(([,l])=>l.name),bits=[];
+    if(x.oc.includes(MYRID))bits.push("24 duty");else if(x.am.includes(MYRID))bits.push("Morning duty");
+    if(th.length)bits.push("Theatre");if(onLeave(MYRID,t))bits.push("On leave");
+    today_=`<div class="panel" style="margin-bottom:14px"><b>Today</b>: ${bits.length?bits.map(b=>`<span>${b}</span>`).join(" + "):"<span>Nothing on the roster</span>"}</div>`}
+  let tiles;
+  if(MYRID)tiles=[tile("mine","📅","My schedule"),tile("theatre","🩺","My theatre days"),tile("exams","📝","My exams"),tile("lectures","🎓","My lectures"),tile("log","📒","My logbook"),tile("reqs","✉️","Leave or swap"),tile("assess","📊","My assessments"),tile("duty","🗓️","Duty roster"),tile("conduct","⭐","Awards and penalties")];
+  else if(MYTR)tiles=[tile("mine","📅","My schedule"),tile("log","📒","Cases to approve",PN.log),tile("assess","📊","Fill an assessment"),tile("theatre","🩺","Theatre"),tile("duty","🗓️","Duty roster"),tile("lectures","🎓","Lectures"),tile("exams","📝","Exams")].concat(isCm()?[tile("conduct","⭐","Awards and penalties")]:[]);
+  else if(VIEWER)tiles=[tile("mine","📅","My schedule"),tile("theatre","🩺","Theatre"),tile("exams","📝","Exams"),tile("lectures","🎓","Lectures"),tile("duty","🗓️","Duty roster")];
+  else tiles=[tile("duty","🗓️","Duty roster"),tile("theatre","🩺","Theatre"),tile("reqs","✉️","Requests",PN.reqs),tile("log","📒","Logbook",PN.log),tile("lectures","🎓","Lectures"),tile("exams","📝","Exams"),tile("people","👥","Residents"),tile("assess","📊","Assessments"),tile("conduct","⭐","Awards and penalties"),tile("report","📈","Reports"),tile("settings","⚙️","Settings")];
+  const hr=new Date().getHours(),greet=hr<12?"Good morning":hr<18?"Good afternoon":"Good evening",ic=hr<6||hr>=18?"🌙":hr<12?"☀️":"🌤️";
+  const day=Math.floor(Date.now()/864e5),line=HELLO_LINES[day%HELLO_LINES.length];
+  return `<div class="hello"><div class="hi-g"><span>${ic}</span> <span>${greet}</span></div><div class="hi-n">${nm?`<span>Welcome</span><span>${LANG==="ar"?"،":","}</span> <span data-notr>${esc(nm)}</span>`:"<span>Welcome</span>"}</div><p class="hi-l">${line}</p><p class="hi-q">What would you like to do?</p></div>${today_}<div class="tiles">${tiles.join("")}</div>`+
+    (VIEWER?`<p class="note noprint" style="margin-top:16px">${LIVE&&LIVE.user?"Signed in as "+esc(LIVE.user.email)+". ":""}<button class="btn sm" id="signout">Sign out</button></p>`:"");
+}
+
 /* ================= this week ================= */
 function vWeek(){
   const t=today(),L=lecSorted(),next=L.find(l=>l.date>=t);
@@ -1344,6 +1381,7 @@ async function exportXLSX(){
 function bind(){
   const v=$("#view"),on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};
   on("#shareday",e=>shareDay(e.currentTarget.dataset.d));
+  $$("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
   // lectures
   v.querySelectorAll("[data-lf]").forEach(b=>b.onclick=()=>{LF=b.dataset.lf;render()});
   const lq=$("#lq");if(lq){lq.oninput=()=>{LQ=lq.value;clearTimeout(lq.t);lq.t=setTimeout(()=>{rerender();const n=$("#lq");n.focus();n.setSelectionRange(n.value.length,n.value.length)},350)}}
@@ -1472,7 +1510,7 @@ async function resolveRole(){
   if(!role){try{await fs.getDoc(fs.doc(db,"program","public"));role="viewer"}catch(e){}}
   if(!role){shell(`<h2>No access yet</h2><p>Your account <b dir="ltr">${esc(LIVE.user.email)}</b> is not on this program's list.</p><p class="note">Send this email to your program director so they can add you, then press Try again.</p><div class="row"><button class="btn p" id="ta">Try again</button><button class="btn" id="so">Sign out</button></div>`);
     $("#ta").onclick=resolveRole;$("#so").onclick=()=>LIVE.au.signOut(LIVE.auth);return}
-  LIVE.role=role;VIEWER=role!=="admin";emailHash(LIVE.user.email).then(h=>{MYHASH=h;if(VIEWER&&TAB==="week"&&WHO()[h])TAB="mine";subRecs();liveRender()});document.querySelector("nav.tabs").style.display="";
+  LIVE.role=role;VIEWER=role!=="admin";emailHash(LIVE.user.email).then(h=>{MYHASH=h;subRecs();liveRender()});document.querySelector("nav.tabs").style.display="";
   const pubRef=fs.doc(db,"program","public"),prvRef=fs.doc(db,"program","private");
   if(role==="admin"){
     const pub=await fs.getDoc(pubRef).catch(()=>null),prv=await fs.getDoc(prvRef).catch(()=>null);
@@ -1626,7 +1664,7 @@ const AR={
 "Write a valid email":"اكتب إيميل صحيح","Saved":"تم الحفظ","Could not save":"ما زبط الحفظ","Imported":"تم الاستيراد","Added":"تمت الإضافة","Copied — paste it in the group":"تم النسخ — الصقه بالجروب","That file could not be read":"ما قدرنا نقرأ الملف","Program updated to the new version":"تم تحديث البرنامج للنسخة الجديدة","Your program was uploaded to the cloud":"تم رفع البرنامج للسحابة","Live sync unavailable offline — showing this device's copy":"المزامنة مش متاحة بدون إنترنت — بنعرض نسخة الجهاز","Saved to the cloud":"تم الحفظ بالسحابة","Saving…":"جاري الحفظ…","Preparing…":"جاري التحضير…","Downloaded":"تم التنزيل",
 "Add a name and date":"أضف اسم وتاريخ","Add a title and date":"أضف عنوان وتاريخ","Choose a valid period":"اختار فترة صحيحة","Choose the day and the resident":"اختار اليوم والمقيم","Choose the resident and date":"اختار المقيم والتاريخ","Choose the resident":"اختار المقيم","Choose the resident, date and procedure":"اختار المقيم والتاريخ والعملية",
 "Delete this lecture?":"حذف هذه المحاضرة؟","Delete this exam and its results?":"حذف هذا الامتحان ونتائجه؟","Delete ALL lectures and their attendance? Exams are kept.":"حذف كل المحاضرات وحضورها؟ الامتحانات بتضل.","Are you sure? This cannot be undone unless you have a backup.":"متأكد؟ ما بترجع إلا إذا عندك نسخة احتياطية.","Replace everything with this backup?":"استبدال كل إشي بهاي النسخة الاحتياطية؟",
-"Monday":"الاثنين","Tuesday":"الثلاثاء","Wednesday":"الأربعاء","Thursday":"الخميس","Friday":"الجمعة","Saturday":"السبت","Sunday":"الأحد","Week":"الأسبوع","Month":"الشهر","Today":"اليوم","Ward":"القسم","Quiz":"Quiz","Patient initials":"أول حرفين من اسم المريض","Patient file number":"رقم ملف المريض","e.g. AS":"مثلاً ع ص","e.g. 123456":"مثلاً 123456","No patient ID":"ناقص بيانات المريض","Required. First letter of the patient's first name and of the family name, and the hospital file number.":"إجباري. أول حرف من اسم المريض وأول حرف من اسم العائلة، ورقم ملف المستشفى.","Can't approve: patient initials and file number are missing":"ما بتنفع الموافقة: ناقص حروف اسم المريض ورقم الملف","Write the patient's 2 initials and file number":"اكتب أول حرفين من اسم المريض ورقم ملفه","morning":"صباحي","All":"الكل","Attendance":"الحضور","Clinic":"العيادة","Emergency":"الطوارئ","General":"عام","Last":"آخر مرة","Presenter":"المحاضر","Resident":"المقيم","Setting":"المكان","To":"إلى","Type":"النوع","Reading":"قراءة","or":"أو","performed":"منفّذة","Other (type below)":"أخرى (اكتبها تحت)","Facts only: date, place, what happened":"حقائق فقط: التاريخ، المكان، شو صار","e.g. 2":"مثلاً 2","e.g. Dr. … (consultant)":"مثلاً د. … (استشاري)","Dr. …":"د. …","Cycle A (foundations)":"الدورة A (الأساسيات)","Cycle B (advanced)":"الدورة B (المتقدمة)","Done 0 ·":"معطاة 0 ·","trainer":"مدرّب"
+"Monday":"الاثنين","Tuesday":"الثلاثاء","Wednesday":"الأربعاء","Thursday":"الخميس","Friday":"الجمعة","Saturday":"السبت","Sunday":"الأحد","Week":"الأسبوع","Month":"الشهر","Today":"اليوم","Ward":"القسم","Quiz":"Quiz","Home":"الرئيسية","Welcome":"أهلاً وسهلاً","Good morning":"صباح الخير","Good afternoon":"نهارك سعيد","Good evening":"مساء الخير",",":"،","We wish you a productive and successful day.":"نتمنى لك يوماً موفقاً ومليئاً بالإنجازات.","Every case today is a step closer to being the surgeon you want to be.":"كل حالة اليوم خطوة أقرب للجرّاح اللي بتطمح تكونه.","Glad to have you with us. Have a great day.":"منوّر البرنامج، ونتمنالك يوم حلو.","Your effort today builds your skills for tomorrow.":"تعبك اليوم هو مهارتك بكرة.","Good to see you. Wishing you a smooth day in the department.":"سعداء بوجودك، ونتمنالك يوم هادي بالقسم.","Learn something new today, and teach someone else.":"تعلّم إشي جديد اليوم، وعلّمه لغيرك.","Thank you for your hard work and commitment.":"شكراً على تعبك والتزامك.","What would you like to do?":"شو حابب تعمل؟","My theatre days":"أيام عملياتي","My exams":"امتحاناتي","My lectures":"محاضراتي","Leave or swap":"إجازة أو تبديل","Cases to approve":"حالات للموافقة","Fill an assessment":"تعبئة تقييم","24 duty":"مناوبة 24","Morning duty":"دوام صباحي","On leave":"إجازة","Nothing on the roster":"ما في دوام بالجدول","Signed in as":"مسجّل باسم","Patient initials":"أول حرفين من اسم المريض","Patient file number":"رقم ملف المريض","e.g. AS":"مثلاً ع ص","e.g. 123456":"مثلاً 123456","No patient ID":"ناقص بيانات المريض","Required. First letter of the patient's first name and of the family name, and the hospital file number.":"إجباري. أول حرف من اسم المريض وأول حرف من اسم العائلة، ورقم ملف المستشفى.","Can't approve: patient initials and file number are missing":"ما بتنفع الموافقة: ناقص حروف اسم المريض ورقم الملف","Write the patient's 2 initials and file number":"اكتب أول حرفين من اسم المريض ورقم ملفه","morning":"صباحي","All":"الكل","Attendance":"الحضور","Clinic":"العيادة","Emergency":"الطوارئ","General":"عام","Last":"آخر مرة","Presenter":"المحاضر","Resident":"المقيم","Setting":"المكان","To":"إلى","Type":"النوع","Reading":"قراءة","or":"أو","performed":"منفّذة","Other (type below)":"أخرى (اكتبها تحت)","Facts only: date, place, what happened":"حقائق فقط: التاريخ، المكان، شو صار","e.g. 2":"مثلاً 2","e.g. Dr. … (consultant)":"مثلاً د. … (استشاري)","Dr. …":"د. …","Cycle A (foundations)":"الدورة A (الأساسيات)","Cycle B (advanced)":"الدورة B (المتقدمة)","Done 0 ·":"معطاة 0 ·","trainer":"مدرّب"
 };
 const AR_RX=[
  [/^Done (\d+) ·$/,(m,a)=>`معطاة ${a} ·`],

@@ -452,7 +452,8 @@ function rotAt(r,date){const b=blocksOf(r.id).find(x=>x.from<=date&&date<=x.to);
 function rpOf(r){if(!ST.rp[r.id])ST.rp[r.id]={boardStart:"",since:"",phone:"",email:"",notes:"",hist:[]};return ST.rp[r.id]}
 
 /* ================= router ================= */
-const VIEWER_TABS=["mine","week","lectures","exams","duty","log","reqs"];
+const VIEWER_TABS=["mine","week","lectures","exams","duty","log","reqs","assess"];
+const viewerTabs=()=>MYTR?["mine","week","lectures","exams","duty","log","assess"]:MYRID?VIEWER_TABS:["mine","week","lectures","exams","duty"];
 let TAB=location.hash.slice(1)||"week";
 function go(t){TAB=t;location.hash=t;render()}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
@@ -463,8 +464,8 @@ function render(){
   const up=ST.lectures.filter(l=>l.date>=today()).length;
   $("#psub").textContent=`${ST.residents.length} resident${ST.residents.length===1?"":"s"} · ${ST.lectures.length} lectures (${up} upcoming) · ${ST.exams.length} exams`;
   if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="week";
-  const PN=VIEWER?{log:0,reqs:0}:pendN();
-  $$("nav.tabs button").forEach(b=>{if(!b.dataset.l)b.dataset.l=b.textContent;const n=PN[b.dataset.t];b.textContent=b.dataset.l+(n?" ("+n+")":"");b.setAttribute("aria-selected",b.dataset.t===TAB);b.style.display=VIEWER&&!VIEWER_TABS.includes(b.dataset.t)?"none":""});
+  const PN=VIEWER&&!MYTR?{log:0,reqs:0}:pendN();
+  $$("nav.tabs button").forEach(b=>{if(!b.dataset.l)b.dataset.l=b.textContent;const n=PN[b.dataset.t];b.textContent=b.dataset.l+(n?" ("+n+")":"");b.setAttribute("aria-selected",b.dataset.t===TAB);b.style.display=VIEWER&&!viewerTabs().includes(b.dataset.t)?"none":""});
   const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,log:vLog,assess:vEval,reqs:vReqs,frame:vFrame,settings:vSettings}[TAB]||vWeek;
   const y=window.scrollY;$("#view").innerHTML=V();bind();if(render.keep){window.scrollTo(0,y);render.keep=false}else window.scrollTo(0,0);
 }
@@ -868,31 +869,40 @@ function frameSheet(id){const s=id?ST.frame.find(x=>x.id===id):{title:"",body:""
   if(id)$("#f_del").onclick=()=>{if(confirm("Delete this section?")){ST.frame=ST.frame.filter(x=>x.id!==id);save();closeSheet();rerender()}};
 }
 /* ================= shared records in the cloud (logbook cases, requests) ================= */
-let CLOGS=null,CREQS=null,MYRID=null;
+let CLOGS=null,CREQS=null,CEVALS=null,MYRID=null,MYTR=null;
 const okRec=x=>!x.status||x.status==="ok";
+const myEmail=()=>LIVE&&LIVE.user?String(LIVE.user.email||"").trim().toLowerCase():"";
 function REQB(){if(CREQS)return CREQS;if(!Array.isArray(ST.reqs))ST.reqs=[];return ST.reqs}
-function recPut(c,x){const live=c==="logs"?CLOGS:CREQS;
-  if(LIVE&&live){const d=JSON.parse(JSON.stringify(x));delete d.id;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,c,x.id),d).catch(e=>toast("Could not save: "+(e.code||e.message)));return}
-  const A=c==="logs"?LOGB():REQB();const i=A.findIndex(y=>y.id===x.id);if(i>=0)A[i]=x;else A.push(x);save()}
-function recDel(c,id){const live=c==="logs"?CLOGS:CREQS;
-  if(LIVE&&live){LIVE.fs.deleteDoc(LIVE.fs.doc(LIVE.db,c,id)).catch(e=>toast("Could not delete: "+(e.code||e.message)));return}
-  if(c==="logs")ST.logbook=LOGB().filter(e=>e.id!==id);else ST.reqs=REQB().filter(e=>e.id!==id);save()}
+const LOCALK={logs:"logbook",reqs:"reqs",evals:"evals"};
+const liveArr=c=>c==="logs"?CLOGS:c==="reqs"?CREQS:CEVALS;
+const recArr=c=>c==="logs"?LOGB():c==="reqs"?REQB():EVS();
+function recPut(c,x){
+  if(LIVE&&liveArr(c)){const d=JSON.parse(JSON.stringify(x));delete d.id;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,c,x.id),d).catch(e=>toast("Could not save: "+(e.code||e.message)));return}
+  const A=recArr(c);const i=A.findIndex(y=>y.id===x.id);if(i>=0)A[i]=x;else A.push(x);save()}
+function recDel(c,id){
+  if(LIVE&&liveArr(c)){LIVE.fs.deleteDoc(LIVE.fs.doc(LIVE.db,c,id)).catch(e=>toast("Could not delete: "+(e.code||e.message)));return}
+  ST[LOCALK[c]]=recArr(c).filter(e=>e.id!==id);save()}
 function subRecs(){if(!LIVE||!LIVE.role||LIVE.recSub)return;const {fs,db}=LIVE;
-  if(LIVE.role!=="admin"){const k=MYHASH?WHO()[MYHASH]||"":"";if(!k.startsWith("r:"))return;MYRID=k.slice(2)}
+  let Q;const col=c=>fs.collection(db,c),W=(c,k,v)=>fs.query(col(c),fs.where(k,"==",v));
+  if(LIVE.role==="admin")Q={logs:col("logs"),reqs:col("reqs"),evals:col("evals")};
+  else{const k=MYHASH?WHO()[MYHASH]||"":"";
+    if(k.startsWith("r:")){MYRID=k.slice(2);Q={logs:W("logs","rid",MYRID),reqs:W("reqs","rid",MYRID),evals:W("evals","rid",MYRID)}}
+    else if(k.startsWith("t:")){MYTR=k.slice(2);CREQS=[];Q={logs:W("logs","sup",MYTR),evals:W("evals","by",myEmail())}}
+    else return}
   LIVE.recSub=true;
-  ["logs","reqs"].forEach(c=>{const q=LIVE.role==="admin"?fs.collection(db,c):fs.query(fs.collection(db,c),fs.where("rid","==",MYRID));
-    LIVE.unsub.push(fs.onSnapshot(q,s=>{const a=s.docs.map(d=>Object.assign({},d.data(),{id:d.id}));const first=c==="logs"?CLOGS===null:CREQS===null;
-      if(c==="logs")CLOGS=a;else CREQS=a;
-      if(c==="logs"&&first&&LIVE.role==="admin"&&Array.isArray(ST.logbook)&&ST.logbook.length){ST.logbook.forEach(x=>recPut("logs",Object.assign({status:"ok",by:"admin"},x)));ST.logbook=[];pushLive()}
+  Object.entries(Q).forEach(([c,q])=>{
+    LIVE.unsub.push(fs.onSnapshot(q,s=>{const a=s.docs.map(d=>Object.assign({},d.data(),{id:d.id}));const first=liveArr(c)===null;
+      if(c==="logs")CLOGS=a;else if(c==="reqs")CREQS=a;else CEVALS=a;
+      if(first&&LIVE.role==="admin"&&c!=="reqs"){const lk=LOCALK[c];if(Array.isArray(ST[lk])&&ST[lk].length){ST[lk].forEach(x=>recPut(c,Object.assign({status:"ok",by:"admin"},x)));ST[lk]=[];pushLive()}}
       liveRender()},e=>console.warn(c,e.code)))});
   if(LIVE.role==="admin")LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","res"),s=>{LIVE.res=s.data()||{};LIVE.resLoaded=true;syncRes()},()=>{}));
 }
 function syncRes(){if(!LIVE||LIVE.role!=="admin"||!LIVE.resLoaded)return;const L=LIVE.lists;if(!L)return;
   const em=[...(L.viewers||[]),...(L.admins||[])];if(!em.every(e=>HASHES[e]))return;
-  const want={};em.forEach(e=>{const w=WHO()[HASHES[e]]||"";if(w.startsWith("r:"))want[e.trim().toLowerCase()]=w.slice(2)});
+  const want={};em.forEach(e=>{const w=WHO()[HASHES[e]]||"";if(w.startsWith("r:"))want[e.trim().toLowerCase()]=w.slice(2);else if(w.startsWith("t:"))want[e.trim().toLowerCase()]=w});
   const s=o=>JSON.stringify(Object.keys(o).sort().map(k=>[k,o[k]]));if(s(want)===s(LIVE.res||{}))return;
   LIVE.res=want;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"access","res"),want).catch(e=>console.warn("res",e.code))}
-const pendN=()=>({log:LOGB().filter(x=>x.status==="pending").length,reqs:REQB().filter(x=>x.status==="pending").length});
+const pendN=()=>({log:LOGB().filter(x=>x.status==="pending"&&(!MYTR||x.sup===MYTR)).length,reqs:REQB().filter(x=>x.status==="pending").length});
 
 /* ================= requests (leave, duty swap) ================= */
 const stTag=s=>s==="pending"?'<span class="tag" style="background:#FEF3C7;color:#92400E">Waiting</span>':s==="rejected"?'<span class="badge b-not">Declined</span>':'<span class="badge b-done">Approved</span>';
@@ -947,8 +957,9 @@ function bindPhase2(){const on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};
   on("#rqleave",()=>reqSheet("leave"));on("#rqswap",()=>reqSheet("swap"));
   $$("[data-rqd]").forEach(b=>b.onclick=()=>decideSheet(b.dataset.rqd));
   $$("[data-rqx]").forEach(b=>b.onclick=e=>{e.stopPropagation();if(confirm("Cancel this request?")){recDel("reqs",b.dataset.rqx);rerender()}});
-  $$("[data-lok]").forEach(b=>b.onclick=()=>{const x=LOGB().find(e=>e.id===b.dataset.lok);if(x){recPut("logs",Object.assign({},x,{status:"ok"}));rerender()}});
-  $$("[data-lno]").forEach(b=>b.onclick=()=>{const x=LOGB().find(e=>e.id===b.dataset.lno);if(x&&confirm("Decline this case?")){recPut("logs",Object.assign({},x,{status:"rejected"}));rerender()}});
+  const dec=(x,st)=>recPut("logs",Object.assign({},x,{status:st,decidedBy:MYTR||"Program director"}));
+  $$("[data-lok]").forEach(b=>b.onclick=()=>{const x=LOGB().find(e=>e.id===b.dataset.lok);if(x){dec(x,"ok");rerender()}});
+  $$("[data-lno]").forEach(b=>b.onclick=()=>{const x=LOGB().find(e=>e.id===b.dataset.lno);if(x&&confirm("Decline this case?")){dec(x,"rejected");rerender()}});
   on("#lokall",()=>{const P=LOGB().filter(x=>x.status==="pending"&&x.rid===LOGR);if(!P.length||!confirm("Approve all "+P.length+" waiting cases?"))return;P.forEach(x=>recPut("logs",Object.assign({},x,{status:"ok"})));rerender()});
   on("#golog",()=>go("log"));on("#goreq",()=>go("reqs"));
 }
@@ -967,7 +978,15 @@ const tgtNum=p=>{const m=String(p&&p.target||"").match(/\d+/);return m?+m[0]:0};
 function periodRange(k){const t=today();if(k==="3m")return [addD(t,-91),t];if(k==="year")return [ST.yearStart||"0000",t];return ["0000","9999"]}
 const periodSel=(id,v)=>`<select class="f2" id="${id}">${opt("all","All time",v==="all")}${opt("3m","Last 3 months",v==="3m")}${opt("year","This academic year",v==="year")}</select>`;
 function logCounts(rid,a,b){const c={};LOGB().filter(x=>okRec(x)&&x.rid===rid&&x.date>=a&&x.date<=b).forEach(x=>{const k=x.proc||("t:"+(x.procText||"Other"));const o=c[k]=c[k]||[0,0,0,0,0];o[+x.role||0]+=(+x.n||1)});return c}
+function vLogTrainer(){
+  const L=LOGB().filter(x=>x.sup===MYTR),P=L.filter(x=>x.status==="pending").sort((a,b)=>b.date.localeCompare(a.date)),D=L.filter(x=>x.status!=="pending").sort((a,b)=>b.date.localeCompare(a.date));
+  const row=(x,act)=>{const r=resById(x.rid)||{name:"—"};return `<div class="kv"><span>${fd(x.date)} <b>${esc(r.name)}</b> · ${esc(procName(x))}${+x.n>1?" ×"+x.n:""}${act?"":" "+stTag(x.status||"ok")}<br><span class="note">${LV[+x.role||0]}${x.notes?" · "+esc(x.notes):""}</span></span>${act?`<span style="display:flex;gap:4px"><button class="btn sm mini p" data-lok="${x.id}">Approve</button><button class="btn sm mini" data-lno="${x.id}">Decline</button></span>`:""}</div>`};
+  return `<h2>Cases you supervised</h2><p class="lead">Residents name you as the supervising consultant. Approve the cases you saw.</p>
+  <h3>Waiting for you (${P.length})</h3><div class="panel">${P.map(x=>row(x,true)).join("")||'<p class="note">Nothing waiting.</p>'}</div>
+  <h3>Decided</h3><div class="panel">${D.slice(0,40).map(x=>row(x,false)).join("")||'<p class="note">None yet.</p>'}</div>`;
+}
 function vLog(){
+  if(VIEWER&&MYTR)return vLogTrainer();
   if(VIEWER){if(!MYRID||!resById(MYRID))return `<h2>Logbook</h2><div class="empty">Your email is not linked to your name yet. Ask the program director to link it.</div>`;LOGR=MYRID}
   const R=VIEWER?[resById(MYRID)]:sortedRes();if(LOGR&&!resById(LOGR))LOGR="";if(!LOGR&&R.length)LOGR=R[0].id;
   let h=`<h2>${VIEWER?"My logbook":"Logbook"}</h2><p class="lead">${VIEWER?"Add each case the same day. It counts once the program director approves it.":"Each case with the resident's role. Performed (under supervision or independent) counts toward the target."}</p>
@@ -1001,7 +1020,8 @@ function logSheet(id){const x=id?LOGB().find(e=>e.id===id):{rid:LOGR,date:today(
   <div class="row"><div style="flex:1;min-width:140px">${field("Date",inp("g_d",x.date,'type="date"'))}</div><div style="flex:1;min-width:90px">${field("Number of cases",inp("g_n",x.n||1,'type="number" min="1"'))}</div></div>
   ${field("Procedure",`<select class="f2" id="g_p">${procOptions(x.proc)}</select>`)}${field("Other procedure (if not on the list)",inp("g_pt",x.procText))}
   ${field("Role",`<select class="f2" id="g_role">${[1,2,3,4].map(k=>opt(k,LV[k],k===+x.role)).join("")}</select>`)}
-  ${field("Supervising consultant",inp("g_sup",x.sup,'list="trdl2"')+dlist("trdl2",trainersList()))}
+  ${field("Supervising consultant",`<select class="f2" id="g_sup">${opt("","—",!x.sup)}${[...new Set([...trainersList(),...(x.sup?[x.sup]:[])])].map(t=>opt(t,t,t===x.sup)).join("")}</select>`)}
+  <p class="note" style="margin-top:-6px">The consultant you choose can approve this case from their own account.</p>
   ${field("Notes (no patient names)",inp("g_notes",x.notes))}
   <div class="row"><button class="btn p" id="g_save">Save</button>${id?"":'<button class="btn" id="g_more">Save and add another</button>'}<button class="btn" id="g_cancel">Cancel</button>${id?'<button class="btn d" id="g_del">Delete</button>':""}</div>`);
   const val=()=>({rid:$("#g_r").value,date:$("#g_d").value,proc:$("#g_p").value,procText:$("#g_p").value?"":$("#g_pt").value.trim(),role:+$("#g_role").value,n:Math.max(1,+$("#g_n").value||1),sup:$("#g_sup").value.trim(),notes:$("#g_notes").value.trim()});
@@ -1020,23 +1040,32 @@ const WBA={
  "Mini-CEX":{max:9,band:v=>v<=3?"Below expectations":v<=6?"Meets expectations":"Above expectations",dom:["History taking","Physical examination","Professionalism","Clinical judgement","Communication","Organisation and efficiency","Overall clinical care"]},
  "DOPS":{max:6,band:v=>v<=2?"Below expectations":v===3?"Borderline":v===4?"Meets expectations":"Above expectations",dom:["Indications and relevant anatomy","Informed consent","Preparation before the procedure","Analgesia or anaesthesia","Technical ability","Aseptic technique","Seeks help when needed","Care after the procedure","Communication","Professionalism","Overall performance"]}};
 let EVR="",EVP="year";
-function EVS(){if(!Array.isArray(ST.evals))ST.evals=[];return ST.evals}
+function EVS(){if(CEVALS)return CEVALS;if(!Array.isArray(ST.evals))ST.evals=[];return ST.evals}
 const evOverall=x=>{const W=WBA[x.type];if(!W)return null;const v=(x.scores||{})[W.dom[W.dom.length-1]];return v?+v:null};
 const evPct=x=>{const v=evOverall(x),W=WBA[x.type];return v&&W?Math.round(v/W.max*100):null};
+function vEvalRes(){const r=resById(MYRID);if(!r)return `<h2>My assessments</h2><div class="empty">Your email is not linked to your name yet.</div>`;
+  const E=EVS().filter(x=>x.rid===MYRID).sort((x,y)=>y.date.localeCompare(x.date));const p=E.map(evPct).filter(v=>v!=null);
+  return `<h2>My assessments</h2><p class="lead">Mini-CEX and DOPS forms your consultants filled for you. Tap one to read it.</p>
+  <div class="kpis"><div><b>${E.filter(x=>x.type==="Mini-CEX").length}</b><span>Mini-CEX</span></div><div><b>${E.filter(x=>x.type==="DOPS").length}</b><span>DOPS</span></div><div><b>${p.length?avgArr(p)+"%":"—"}</b><span>average overall</span></div></div>
+  <div class="panel">${E.map(evRow).join("")||'<p class="note">No assessments yet.</p>'}</div>`}
+const evRow=x=>{const r=resById(x.rid)||{name:"—"},v=evOverall(x),W=WBA[x.type];
+  return `<div class="kv" data-ev="${x.id}" style="cursor:pointer"><span>${fd(x.date)} ${VIEWER&&MYRID?"":`<b>${esc(r.name)}</b> `}<span class="tag">${esc(x.type)}</span><br><span class="note">${esc(x.focus||"")}${x.assessor?" · "+esc(x.assessor):""}</span></span><span>${v?`<b>${v}/${W.max}</b><div class="note">${W.band(v)}</div>`:"—"}</span></div>`};
 function vEval(){
+  if(VIEWER&&MYRID)return vEvalRes();
+  if(VIEWER&&!MYTR)return `<h2>Assessments</h2><div class="empty">Your email is not linked to your name yet.</div>`;
   const R=sortedRes(),[a,b]=periodRange(EVP);
-  let h=`<h2>Assessments</h2><p class="lead">Mini-CEX for clinical encounters and DOPS for procedures. Open one to see every domain.</p>
+  let h=`<h2>Assessments</h2><p class="lead">${VIEWER?"Fill a Mini-CEX after you watch a resident with a patient, or a DOPS after a procedure. The resident and the program director see it.":"Mini-CEX for clinical encounters and DOPS for procedures. Open one to see every domain."}</p>
   <div class="panel noprint" style="margin-bottom:12px"><div class="row"><div style="flex:2;min-width:160px">${field("Resident",`<select class="f2" id="evr">${opt("","Everyone",!EVR)}${R.map(r=>opt(r.id,r.name+" (R"+r.level+")",r.id===EVR)).join("")}</select>`)}</div><div style="flex:1;min-width:140px">${field("Period",periodSel("evp",EVP))}</div></div>
-  <div class="row"><button class="btn p" id="addev" data-t="Mini-CEX">+ Mini-CEX</button><button class="btn p" id="addev2" data-t="DOPS">+ DOPS</button><button class="btn" id="evcsv">Excel</button><button class="btn" onclick="window.print()">Print</button></div></div>`;
+  <div class="row"><button class="btn p" id="addev" data-t="Mini-CEX">+ Mini-CEX</button><button class="btn p" id="addev2" data-t="DOPS">+ DOPS</button>${VIEWER?"":'<button class="btn" id="evcsv">Excel</button>'}<button class="btn" onclick="window.print()">Print</button></div></div>`;
   if(!R.length)return h+`<div class="empty">Add residents first.</div>`;
   const E=EVS().filter(x=>x.date>=a&&x.date<=b&&(!EVR||x.rid===EVR)).sort((x,y)=>y.date.localeCompare(x.date));
   h+=`<div class="panel" style="padding:4px 8px;overflow-x:auto"><table class="rep"><thead><tr><th>Resident</th><th class="n">Mini-CEX</th><th class="n">DOPS</th><th class="n">Average overall</th><th>Last</th></tr></thead><tbody>${R.filter(r=>!EVR||r.id===EVR).map(r=>{const m=E.filter(x=>x.rid===r.id);const p=m.map(evPct).filter(v=>v!=null);
     return `<tr><td>${esc(r.name)} <span class="note">R${r.level}</span></td><td class="n">${m.filter(x=>x.type==="Mini-CEX").length}</td><td class="n">${m.filter(x=>x.type==="DOPS").length}</td><td class="n">${p.length?avgArr(p)+"%":"—"}</td><td>${m[0]?fd(m[0].date):"—"}</td></tr>`}).join("")}</tbody></table></div>`;
-  h+=`<h3>Forms</h3><div class="panel">${E.map(x=>{const r=resById(x.rid)||{name:"—"},v=evOverall(x),W=WBA[x.type];
-    return `<div class="kv" data-ev="${x.id}" style="cursor:pointer"><span>${fd(x.date)} <b>${esc(r.name)}</b> <span class="tag">${esc(x.type)}</span><br><span class="note">${esc(x.focus||"")}${x.assessor?" · "+esc(x.assessor):""}</span></span><span>${v?`<b>${v}/${W.max}</b><div class="note">${W.band(v)}</div>`:"—"}</span></div>`}).join("")||'<p class="note">No assessments in this period.</p>'}</div>`;
+  h+=`<h3>${VIEWER?"Forms you filled":"Forms"}</h3><div class="panel">${E.map(evRow).join("")||'<p class="note">No assessments in this period.</p>'}</div>`;
   return h;
 }
-function evalSheet(id,type){const x=id?EVS().find(e=>e.id===id):{rid:EVR||"",date:today(),type,assessor:"",setting:"",focus:"",scores:{},strengths:"",improve:"",action:""};if(!x)return;const W=WBA[x.type];
+function evalSheet(id,type){const x=id?EVS().find(e=>e.id===id):{rid:EVR||"",date:today(),type,assessor:MYTR||"",setting:"",focus:"",scores:{},strengths:"",improve:"",action:""};if(!x)return;const W=WBA[x.type];
+  const ro=VIEWER&&!MYTR;
   openSheet(`<h3>${esc(x.type)}</h3>
   ${field("Resident",`<select class="f2" id="e_r">${sortedRes().map(r=>opt(r.id,r.name+" (R"+r.level+")",r.id===x.rid)).join("")}</select>`)}
   <div class="row"><div style="flex:1;min-width:140px">${field("Date",inp("e_d",x.date,'type="date"'))}</div><div style="flex:1;min-width:140px">${field("Assessor",inp("e_as",x.assessor,'list="trdl3"')+dlist("trdl3",trainersList()))}</div></div>
@@ -1046,13 +1075,18 @@ function evalSheet(id,type){const x=id?EVS().find(e=>e.id===id):{rid:EVR||"",dat
   ${field("What went well",`<textarea class="f2" id="e_s" rows="2">${esc(x.strengths)}</textarea>`)}
   ${field("What to improve",`<textarea class="f2" id="e_i" rows="2">${esc(x.improve)}</textarea>`)}
   ${field("Agreed action",inp("e_a",x.action))}
-  <div class="row"><button class="btn p" id="e_save">Save</button><button class="btn" id="e_cancel">Cancel</button>${id?'<button class="btn" id="e_share">Share</button><button class="btn d" id="e_del">Delete</button>':""}</div>`);
+  <div class="row">${ro?"":'<button class="btn p" id="e_save">Save</button>'}<button class="btn" id="e_cancel">${ro?"Close":"Cancel"}</button>${id?'<button class="btn" id="e_share">Share</button>':""}${id&&!ro?'<button class="btn d" id="e_del">Delete</button>':""}</div>`);
+  if(ro)$$("#sheet input,#sheet select,#sheet textarea").forEach(e=>e.disabled=true);
+  if(MYTR&&$("#e_as"))$("#e_as").disabled=true;
   $("#e_cancel").onclick=closeSheet;
+  if(id)$("#e_share").onclick=()=>{const r=resById(x.rid)||{};shareText(`${x.type}: ${r.name||""} (R${r.level||""})\n${fdw(x.date)}${x.assessor?" · "+x.assessor:""}${x.setting?" · "+x.setting:""}\n${x.focus||""}\n\n`+W.dom.filter(d=>x.scores[d]).map(d=>`${d}: ${x.scores[d]}/${W.max}`).join("\n")+(x.strengths?`\n\nWent well: ${x.strengths}`:"")+(x.improve?`\nTo improve: ${x.improve}`:"")+(x.action?`\nAction: ${x.action}`:""))};
+  if(ro)return;
   $("#e_save").onclick=()=>{const sc={};$$("[data-esc]").forEach(s=>{if(s.value)sc[W.dom[+s.dataset.esc]]=+s.value});
     const v={rid:$("#e_r").value,date:$("#e_d").value,type:x.type,assessor:$("#e_as").value.trim(),setting:$("#e_set").value,focus:$("#e_f").value.trim(),scores:sc,strengths:$("#e_s").value.trim(),improve:$("#e_i").value.trim(),action:$("#e_a").value.trim()};
-    if(!v.rid||!v.date){toast("Choose the resident and date");return}if(id)Object.assign(x,v);else EVS().push(Object.assign({id:uid()},v));EVR=EVR&&v.rid;save();closeSheet();toast("Saved");rerender()};
-  if(id){$("#e_del").onclick=()=>{if(!confirm("Delete this assessment?"))return;ST.evals=EVS().filter(e=>e.id!==id);save();closeSheet();rerender()};
-    $("#e_share").onclick=()=>{const r=resById(x.rid)||{};shareText(`${x.type}: ${r.name||""} (R${r.level||""})\n${fdw(x.date)}${x.assessor?" · "+x.assessor:""}${x.setting?" · "+x.setting:""}\n${x.focus||""}\n\n`+W.dom.filter(d=>x.scores[d]).map(d=>`${d}: ${x.scores[d]}/${W.max}`).join("\n")+(x.strengths?`\n\nWent well: ${x.strengths}`:"")+(x.improve?`\nTo improve: ${x.improve}`:"")+(x.action?`\nAction: ${x.action}`:""))}}
+    if(MYTR)v.assessor=MYTR;
+    if(!v.rid||!v.date){toast("Choose the resident and date");return}recPut("evals",Object.assign({id:id||uid(),at:x.at||new Date().toISOString(),by:x.by||(VIEWER?myEmail():"admin")},v));EVR=EVR&&v.rid;closeSheet();toast("Saved");rerender()};
+  if(id){$("#e_del").onclick=()=>{if(!confirm("Delete this assessment?"))return;recDel("evals",id);closeSheet();rerender()};
+  }
 }
 function evCsv(){const D=[...WBA["Mini-CEX"].dom,...WBA.DOPS.dom.filter(d=>!WBA["Mini-CEX"].dom.includes(d))];
   const rows=[["Date","Resident","Year","Form","Assessor","Setting","Case or procedure",...D,"Went well","To improve","Action"]].concat(EVS().slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{const r=resById(x.rid)||{};return [x.date,r.name||"",r.level?"R"+r.level:"",x.type,x.assessor,x.setting,x.focus,...D.map(d=>(x.scores||{})[d]??""),x.strengths,x.improve,x.action]}));
@@ -1285,7 +1319,7 @@ async function initLive(){
   const app=A.initializeApp(CFG);const auth=AU.getAuth(app);
   let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache()})}catch(e){db=F.getFirestore(app)}
   LIVE={app,auth,db,fs:F,au:AU,user:null,role:null,unsub:[]};
-  AU.onAuthStateChanged(auth,u=>{LIVE.user=u;LIVE.unsub.forEach(f=>f());LIVE.unsub=[];LIVE.recSub=false;LIVE.resLoaded=false;CLOGS=null;CREQS=null;MYRID=null;if(!u){signInScreen();return}
+  AU.onAuthStateChanged(auth,u=>{LIVE.user=u;LIVE.unsub.forEach(f=>f());LIVE.unsub=[];LIVE.recSub=false;LIVE.resLoaded=false;CLOGS=null;CREQS=null;CEVALS=null;MYRID=null;MYTR=null;if(!u){signInScreen();return}
     if(!u.emailVerified){verifyScreen();return}resolveRole()});
 }
 function shell(h){document.querySelector("nav.tabs").style.display="none";$("#psub").textContent="";$("#pname").textContent=ST.name||"ENT Residency Program";$("#view").innerHTML=`<div class="gate">${h}</div>`}
@@ -1381,18 +1415,27 @@ service cloud.firestore {
     function isOwner() { return signedIn() && email() == '${owner}'; }
     function isAdmin() { return isOwner() || (signedIn() && hasLists() && email() in lists().admins); }
     function isViewer() { return isAdmin() || (signedIn() && hasLists() && email() in lists().viewers); }
-    match /access/lists { allow read, write: if isAdmin(); }
-    match /program/public { allow read: if isViewer(); allow write: if isAdmin(); }
-    match /program/private { allow read, write: if isAdmin(); }
     function resMap() { return get(/databases/$(db)/documents/access/res).data; }
     function isRes(rid) { return isViewer() && rid is string && exists(/databases/$(db)/documents/access/res) && email() in resMap() && resMap()[email()] == rid; }
+    function isTr(name) { return isViewer() && name is string && exists(/databases/$(db)/documents/access/res) && email() in resMap() && resMap()[email()] == 't:' + name; }
+    function okEval() { return request.resource.data.rid is string && request.resource.data.by == email() && isTr(request.resource.data.assessor) && request.resource.data.keys().hasOnly(['rid','type','date','assessor','setting','focus','scores','strengths','improve','action','at','by']); }
+    function trDecides() { return isTr(resource.data.sup) && resource.data.status == 'pending' && request.resource.data.status in ['ok','rejected'] && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','decidedBy']); }
     function okNew() { return request.resource.data.status == 'pending' && request.resource.data.keys().hasOnly(['rid','kind','date','proc','procText','role','n','sup','notes','from','to','withRid','withDate','reason','status','at','by']); }
+    match /access/lists { allow read, write: if isAdmin(); }
     match /access/res { allow read, write: if isAdmin(); }
+    match /program/public { allow read: if isViewer(); allow write: if isAdmin(); }
+    match /program/private { allow read, write: if isAdmin(); }
     match /logs/{id} {
-      allow read: if isAdmin() || isRes(resource.data.rid);
+      allow read: if isAdmin() || isRes(resource.data.rid) || isTr(resource.data.sup);
       allow create: if isAdmin() || (isRes(request.resource.data.rid) && okNew());
-      allow update: if isAdmin() || (isRes(resource.data.rid) && resource.data.status == 'pending' && request.resource.data.rid == resource.data.rid && okNew());
+      allow update: if isAdmin() || (isRes(resource.data.rid) && resource.data.status == 'pending' && request.resource.data.rid == resource.data.rid && okNew()) || trDecides();
       allow delete: if isAdmin() || (isRes(resource.data.rid) && resource.data.status == 'pending');
+    }
+    match /evals/{id} {
+      allow read: if isAdmin() || isRes(resource.data.rid) || (isViewer() && resource.data.by == email());
+      allow create: if isAdmin() || okEval();
+      allow update: if isAdmin() || (resource.data.by == email() && okEval());
+      allow delete: if isAdmin() || (isViewer() && resource.data.by == email());
     }
     match /reqs/{id} {
       allow read: if isAdmin() || isRes(resource.data.rid);

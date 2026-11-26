@@ -56,6 +56,7 @@ h3{font-size:1rem;margin:18px 0 8px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:700px){.grid2{grid-template-columns:1fr}}
 .kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:.92rem}.kv:first-of-type{border-top:0}
 .kv span:first-child{font-weight:600;white-space:nowrap}.kv span:last-child{color:var(--muted);text-align:right}
+.kv span.w{white-space:normal;min-width:0;flex:1;overflow-wrap:anywhere}
 /* lectures */
 .block{margin-bottom:18px}
 .block .bh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
@@ -172,7 +173,7 @@ select.f2,input.f2,textarea.f2{width:100%;padding:8px 10px;border:1px solid var(
 <body>
 <header class="app"><div class="in"><h1 id="pname">ENT Residency Program</h1><p id="psub"></p></div>
 <nav class="tabs" role="tablist">
- <button data-t="mine">My schedule</button><button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="reqs">Requests</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="log">Logbook</button><button data-t="assess">Assessments</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
+ <button data-t="mine">My schedule</button><button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="reqs">Requests</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="log">Logbook</button><button data-t="assess">Assessments</button><button data-t="conduct">Conduct</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
 </nav></header>
 <main id="view"></main>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
@@ -356,7 +357,7 @@ function old_applyEdits(out){
 }
 /* ================= state ================= */
 const KEY="ent-program-v1";
-const DEF={name:"ENT Residency Program",defTime:"12:00",yearStart:null,residents:[],lectures:[],exams:[],scores:{},att:{},rotTypes:[],rot:{},rp:{},graduates:[],theatre:{lists:[],weeks:{}},duty:{days:{}},who:{},trainers:[],logbook:[],evals:[],procs:null,frame:null,lecTypes:null,examTypes:null,pinHash:null,pinSalt:null,ownerEmail:""};
+const DEF={name:"ENT Residency Program",defTime:"12:00",yearStart:null,residents:[],lectures:[],exams:[],scores:{},att:{},rotTypes:[],rot:{},rp:{},graduates:[],theatre:{lists:[],weeks:{}},duty:{days:{}},who:{},trainers:[],conductCm:null,conduct:[],logbook:[],evals:[],procs:null,frame:null,lecTypes:null,examTypes:null,pinHash:null,pinSalt:null,ownerEmail:""};
 let VIEWER=false;
 let ST=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return Object.assign({},DEF)}})();
 function saveLocal(){if(VIEWER)return;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
@@ -423,6 +424,7 @@ function seedTables(){
     {id:uid(),title:"Logbook",body:"Every case is logged the same day with the resident's role: observed, assisted, performed under supervision or independent. The supervising consultant signs the logbook monthly."}]}
   if(!ST.lecTypes)ST.lecTypes=DEF_LECTYPES.slice();
   if(!ST.examTypes)ST.examTypes=DEF_EXAMTYPES.slice();
+  if(!Array.isArray(ST.conductCm))ST.conductCm=(ST.trainers||[]).filter(t=>/haitham|abu hilal/i.test(t));
   ["lectures","exams","rotTypes","graduates","logbook","evals"].forEach(k=>{if(!Array.isArray(ST[k]))ST[k]=[]});
   ["scores","att","rot","rp"].forEach(k=>{if(!ST[k]||typeof ST[k]!=="object")ST[k]={}});
   if(!ST.theatre)ST.theatre={lists:[],weeks:{}};
@@ -452,8 +454,8 @@ function rotAt(r,date){const b=blocksOf(r.id).find(x=>x.from<=date&&date<=x.to);
 function rpOf(r){if(!ST.rp[r.id])ST.rp[r.id]={boardStart:"",since:"",phone:"",email:"",notes:"",hist:[]};return ST.rp[r.id]}
 
 /* ================= router ================= */
-const VIEWER_TABS=["mine","week","lectures","exams","duty","log","reqs","assess"];
-const viewerTabs=()=>MYTR?["mine","week","lectures","exams","duty","log","assess"]:MYRID?VIEWER_TABS:["mine","week","lectures","exams","duty"];
+const VIEWER_TABS=["mine","week","lectures","exams","duty","log","reqs","assess","conduct"];
+const viewerTabs=()=>MYTR?["mine","week","lectures","exams","duty","log","assess"].concat(cmList().includes(MYTR)?["conduct"]:[]):MYRID?VIEWER_TABS:["mine","week","lectures","exams","duty"];
 let TAB=location.hash.slice(1)||"week";
 function go(t){TAB=t;location.hash=t;render()}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
@@ -466,7 +468,7 @@ function render(){
   if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="week";
   const PN=VIEWER&&!MYTR?{log:0,reqs:0}:pendN();
   $$("nav.tabs button").forEach(b=>{if(!b.dataset.l)b.dataset.l=b.textContent;const n=PN[b.dataset.t];b.textContent=b.dataset.l+(n?" ("+n+")":"");b.setAttribute("aria-selected",b.dataset.t===TAB);b.style.display=VIEWER&&!viewerTabs().includes(b.dataset.t)?"none":""});
-  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,log:vLog,assess:vEval,reqs:vReqs,frame:vFrame,settings:vSettings}[TAB]||vWeek;
+  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,log:vLog,assess:vEval,conduct:vConduct,reqs:vReqs,frame:vFrame,settings:vSettings}[TAB]||vWeek;
   const y=window.scrollY;$("#view").innerHTML=V();bind();if(render.keep){window.scrollTo(0,y);render.keep=false}else window.scrollTo(0,0);
 }
 function rerender(){render.keep=true;render()}
@@ -873,9 +875,9 @@ let CLOGS=null,CREQS=null,CEVALS=null,MYRID=null,MYTR=null;
 const okRec=x=>!x.status||x.status==="ok";
 const myEmail=()=>LIVE&&LIVE.user?String(LIVE.user.email||"").trim().toLowerCase():"";
 function REQB(){if(CREQS)return CREQS;if(!Array.isArray(ST.reqs))ST.reqs=[];return ST.reqs}
-const LOCALK={logs:"logbook",reqs:"reqs",evals:"evals"};
-const liveArr=c=>c==="logs"?CLOGS:c==="reqs"?CREQS:CEVALS;
-const recArr=c=>c==="logs"?LOGB():c==="reqs"?REQB():EVS();
+const LOCALK={logs:"logbook",reqs:"reqs",evals:"evals",conduct:"conduct"};
+const liveArr=c=>c==="logs"?CLOGS:c==="reqs"?CREQS:c==="conduct"?CCOND:CEVALS;
+const recArr=c=>c==="logs"?LOGB():c==="reqs"?REQB():c==="conduct"?CONDB():EVS();
 function recPut(c,x){
   if(LIVE&&liveArr(c)){const d=JSON.parse(JSON.stringify(x));delete d.id;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,c,x.id),d).catch(e=>toast("Could not save: "+(e.code||e.message)));return}
   const A=recArr(c);const i=A.findIndex(y=>y.id===x.id);if(i>=0)A[i]=x;else A.push(x);save()}
@@ -884,22 +886,25 @@ function recDel(c,id){
   ST[LOCALK[c]]=recArr(c).filter(e=>e.id!==id);save()}
 function subRecs(){if(!LIVE||!LIVE.role||LIVE.recSub)return;const {fs,db}=LIVE;
   let Q;const col=c=>fs.collection(db,c),W=(c,k,v)=>fs.query(col(c),fs.where(k,"==",v));
-  if(LIVE.role==="admin")Q={logs:col("logs"),reqs:col("reqs"),evals:col("evals")};
+  if(LIVE.role==="admin")Q={logs:col("logs"),reqs:col("reqs"),evals:col("evals"),conduct:col("conduct")};
   else{const k=MYHASH?WHO()[MYHASH]||"":"";
-    if(k.startsWith("r:")){MYRID=k.slice(2);Q={logs:W("logs","rid",MYRID),reqs:W("reqs","rid",MYRID),evals:W("evals","rid",MYRID)}}
-    else if(k.startsWith("t:")){MYTR=k.slice(2);CREQS=[];Q={logs:W("logs","sup",MYTR),evals:W("evals","by",myEmail())}}
+    if(k.startsWith("r:")){MYRID=k.slice(2);Q={logs:W("logs","rid",MYRID),reqs:W("reqs","rid",MYRID),evals:W("evals","rid",MYRID),conduct:W("conduct","rid",MYRID)}}
+    else if(k.startsWith("t:")){MYTR=k.slice(2);CREQS=[];Q={logs:W("logs","sup",MYTR),evals:W("evals","by",myEmail())};if(cmList().includes(MYTR))Q.conduct=col("conduct")}
     else return}
   LIVE.recSub=true;
   Object.entries(Q).forEach(([c,q])=>{
     LIVE.unsub.push(fs.onSnapshot(q,s=>{const a=s.docs.map(d=>Object.assign({},d.data(),{id:d.id}));const first=liveArr(c)===null;
-      if(c==="logs")CLOGS=a;else if(c==="reqs")CREQS=a;else CEVALS=a;
-      if(first&&LIVE.role==="admin"&&c!=="reqs"){const lk=LOCALK[c];if(Array.isArray(ST[lk])&&ST[lk].length){ST[lk].forEach(x=>recPut(c,Object.assign({status:"ok",by:"admin"},x)));ST[lk]=[];pushLive()}}
+      if(c==="logs")CLOGS=a;else if(c==="reqs")CREQS=a;else if(c==="conduct")CCOND=a;else CEVALS=a;
+      if(first&&LIVE.role==="admin"&&c!=="reqs"&&c!=="conduct"){const lk=LOCALK[c];if(Array.isArray(ST[lk])&&ST[lk].length){ST[lk].forEach(x=>recPut(c,Object.assign({status:"ok",by:"admin"},x)));ST[lk]=[];pushLive()}}
       liveRender()},e=>console.warn(c,e.code)))});
-  if(LIVE.role==="admin")LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","res"),s=>{LIVE.res=s.data()||{};LIVE.resLoaded=true;syncRes()},()=>{}));
+  if(LIVE.role==="admin"){LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","conduct"),s=>{LIVE.cond=(s.data()||{}).members||[];LIVE.condLoaded=true;syncRes()},()=>{}));
+    LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","res"),s=>{LIVE.res=s.data()||{};LIVE.resLoaded=true;syncRes()},()=>{}))};
 }
 function syncRes(){if(!LIVE||LIVE.role!=="admin"||!LIVE.resLoaded)return;const L=LIVE.lists;if(!L)return;
   const em=[...(L.viewers||[]),...(L.admins||[])];if(!em.every(e=>HASHES[e]))return;
   const want={};em.forEach(e=>{const w=WHO()[HASHES[e]]||"";if(w.startsWith("r:"))want[e.trim().toLowerCase()]=w.slice(2);else if(w.startsWith("t:"))want[e.trim().toLowerCase()]=w});
+  if(LIVE.condLoaded){const cm=em.filter(e=>{const w=WHO()[HASHES[e]]||"";return w.startsWith("t:")&&cmList().includes(w.slice(2))}).map(e=>e.trim().toLowerCase()).sort();
+    if(JSON.stringify(cm)!==JSON.stringify((LIVE.cond||[]).slice().sort())){LIVE.cond=cm;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"access","conduct"),{members:cm}).catch(e=>console.warn("cm",e.code))}}
   const s=o=>JSON.stringify(Object.keys(o).sort().map(k=>[k,o[k]]));if(s(want)===s(LIVE.res||{}))return;
   LIVE.res=want;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"access","res"),want).catch(e=>console.warn("res",e.code))}
 const pendN=()=>({log:LOGB().filter(x=>x.status==="pending"&&(!MYTR||x.sup===MYTR)).length,reqs:REQB().filter(x=>x.status==="pending").length});
@@ -913,7 +918,7 @@ function vReqs(){
   h+=`<p class="lead">${VIEWER?"Ask for leave or a duty swap. The program director approves it here.":"Leave and swap requests from residents. Approving a swap changes the duty roster."}</p>
   <div class="row noprint" style="margin-bottom:12px"><button class="btn p" id="rqleave">+ Leave</button><button class="btn p" id="rqswap">+ Duty swap</button></div>`;
   const A=REQB().filter(x=>!VIEWER||x.rid===MYRID).sort((a,b)=>(b.at||"").localeCompare(a.at||""));
-  const card=x=>{const r=resById(x.rid);const pend=x.status==="pending";return `<div class="kv" ${pend&&!VIEWER?`data-rqd="${x.id}" style="cursor:pointer"`:""}><span>${VIEWER?"":`<b>${esc(r?r.name:"—")}</b> `}${stTag(x.status)}<br>${esc(reqText(x))}${x.reason?`<br><span class="note">${esc(x.reason)}</span>`:""}${x.note?`<br><span class="note">Reply: ${esc(x.note)}</span>`:""}</span>
+  const card=x=>{const r=resById(x.rid);const pend=x.status==="pending";return `<div class="kv" ${pend&&!VIEWER?`data-rqd="${x.id}" style="cursor:pointer"`:""}><span class="w">${VIEWER?"":`<b>${esc(r?r.name:"—")}</b> `}${stTag(x.status)}<br>${esc(reqText(x))}${x.reason?`<br><span class="note">${esc(x.reason)}</span>`:""}${x.note?`<br><span class="note">Reply: ${esc(x.note)}</span>`:""}</span>
     <span class="noprint">${pend&&!VIEWER?'<button class="btn sm mini p">Decide</button>':""}${pend&&VIEWER?`<button class="btn sm mini" data-rqx="${x.id}">Cancel</button>`:""}</span></div>`};
   const P=A.filter(x=>x.status==="pending"),D=A.filter(x=>x.status!=="pending");
   h+=`<h3>Waiting</h3><div class="panel">${P.map(card).join("")||'<p class="note">Nothing waiting.</p>'}</div>`;
@@ -964,6 +969,80 @@ function bindPhase2(){const on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};
   on("#golog",()=>go("log"));on("#goreq",()=>go("reqs"));
 }
 
+/* ================= conduct: penalties and awards ================= */
+const CONDUCT={
+ penalty:{label:"Penalty",types:[
+  ["notice","Notice","لفت نظر","For a first, minor lapse. Said privately to the resident."],
+  ["verbal","Verbal warning","تنبيه شفوي","When a lapse repeats after a notice, or is more serious."],
+  ["written","Written warning","تنبيه كتابي","For repeated lapses after a verbal warning, or a serious one. Goes in the resident's file."],
+  ["shifts","Extra duty shifts","زيادة مناوبات","Extra 24 shifts added to the roster. Write how many."],
+  ["theatre","Suspension from theatre","حرمان من دخول العمليات","No theatre until the end date. Write the end date."]],
+  causes:[["behaviour","Behaviour and professionalism","السلوك"],["error","Errors at work","أخطاء داخل العمل"],["commitment","Commitment and attendance","الالتزام"],["other","Other","أخرى"]]},
+ award:{label:"Award",types:[
+  ["thanks","Letter of appreciation","شكر وتقدير","A written thank-you in the resident's file."],
+  ["fewer","Fewer duty days","تقليل أيام دوام","Duty days taken off the roster. Write how many."],
+  ["moreops","More theatre cases","زيادة عمليات","Extra theatre lists or cases. Write how many or until when."]],
+  causes:[["performance","Excellent performance","أداء مميز"],["commitment","Commitment and attendance","الالتزام"],["academic","Academic work","نشاط علمي"],["other","Other","أخرى"]]}};
+const cType=(k,t)=>(CONDUCT[k]||{types:[]}).types.find(x=>x[0]===t)||[t,t,"",""];
+const cCause=(k,c)=>(CONDUCT[k]||{causes:[]}).causes.find(x=>x[0]===c)||[c,c,""];
+let CCOND=null,CDR="",CDK="all";
+function CONDB(){if(CCOND)return CCOND;if(!Array.isArray(ST.conduct))ST.conduct=[];return ST.conduct}
+const cmList=()=>Array.isArray(ST.conductCm)?ST.conductCm:[];
+const isCm=()=>!VIEWER||(MYTR&&cmList().includes(MYTR));
+const cdBadge=x=>x.kind==="award"?`<span class="badge b-done">${esc(cType("award",x.type)[1])}</span>`:`<span class="badge b-not">${esc(cType("penalty",x.type)[1])}</span>`;
+const cdExtra=x=>x.type==="theatre"&&x.until?" until "+fdy(x.until):x.extra?" · "+esc(x.extra):"";
+function cdRow(x,showName){const r=resById(x.rid)||{name:"—"};
+  return `<div class="kv" ${isCm()?`data-cd="${x.id}" style="cursor:pointer"`:""}><span class="w">${fd(x.date)} ${showName?`<b>${esc(r.name)}</b> `:""}${cdBadge(x)}${cdExtra(x)}<br><span class="note">${esc(cCause(x.kind,x.cause)[1])}${x.details?" · "+esc(x.details):""}</span></span><span class="note" style="flex:0 0 auto;max-width:35%;text-align:right">${esc(x.byName||"")}</span></div>`}
+function vConduct(){
+  if(VIEWER&&MYRID){const E=CONDB().filter(x=>x.rid===MYRID).sort((a,b)=>b.date.localeCompare(a.date));
+    return `<h2>Awards and penalties</h2><p class="lead">Everything the program committee recorded about you. Ask the program director if anything is unclear.</p><div class="panel">${E.map(x=>cdRow(x,false)).join("")||'<p class="note">Nothing recorded.</p>'}</div>`}
+  if(!isCm())return `<h2>Awards and penalties</h2><div class="empty">Only the program committee can open this.</div>`;
+  const R=sortedRes();
+  let h=`<h2>Awards and penalties</h2>
+  <details class="panel" style="margin-bottom:12px" ${CONDB().length?"":"open"}><summary><b>How to use this</b></summary>
+   <p>A penalty follows a resident's <b>behaviour</b>, <b>errors at work</b> or <b>commitment and attendance</b>. Start with the lightest step that fits, and move up only when the problem repeats or is serious:</p>
+   <ol>${CONDUCT.penalty.types.map(t=>`<li><b>${t[1]}</b> (${t[2]}): ${t[3]}</li>`).join("")}</ol>
+   <p>Awards recognise excellent performance, commitment or academic work:</p>
+   <ul>${CONDUCT.award.types.map(t=>`<li><b>${t[1]}</b> (${t[2]}): ${t[3]}</li>`).join("")}</ul>
+   <p class="note">Record facts (date, what happened), not opinions. Talk to the resident before you record it. The resident sees every record about them, and the program director is alerted.</p></details>
+  <div class="panel noprint" style="margin-bottom:12px"><div class="row"><div style="flex:2;min-width:160px">${field("Resident",`<select class="f2" id="cdr">${opt("","Everyone",!CDR)}${R.map(r=>opt(r.id,r.name+" (R"+r.level+")",r.id===CDR)).join("")}</select>`)}</div><div style="flex:1;min-width:120px">${field("Show",`<select class="f2" id="cdk">${opt("all","All",CDK==="all")}${opt("penalty","Penalties",CDK==="penalty")}${opt("award","Awards",CDK==="award")}</select>`)}</div></div>
+  <div class="row"><button class="btn d" id="addpen">+ Penalty</button><button class="btn p" id="addaw">+ Award</button><button class="btn" onclick="window.print()">Print</button>${VIEWER?"":'<button class="btn" id="cdcsv">Excel</button>'}</div></div>`;
+  const yr=addD(today(),-365);
+  h+=`<div class="panel" style="padding:4px 8px;overflow-x:auto"><table class="rep"><thead><tr><th>Resident</th><th class="n">Penalties<br><span class="note">last 12 months</span></th><th>Highest step</th><th class="n">Awards</th></tr></thead><tbody>${R.filter(r=>!CDR||r.id===CDR).map(r=>{const m=CONDB().filter(x=>x.rid===r.id&&x.date>=yr);const P=m.filter(x=>x.kind==="penalty");const top=P.reduce((a,x)=>Math.max(a,CONDUCT.penalty.types.findIndex(t=>t[0]===x.type)),-1);
+    return `<tr><td>${esc(r.name)} <span class="note">R${r.level}</span></td><td class="n">${P.length||"—"}</td><td>${top>=0?esc(CONDUCT.penalty.types[top][1]):"—"}</td><td class="n">${m.filter(x=>x.kind==="award").length||"—"}</td></tr>`}).join("")}</tbody></table></div>`;
+  const E=CONDB().filter(x=>(!CDR||x.rid===CDR)&&(CDK==="all"||x.kind===CDK)).sort((a,b)=>b.date.localeCompare(a.date));
+  h+=`<h3>Records</h3><div class="panel">${E.map(x=>cdRow(x,true)).join("")||'<p class="note">Nothing recorded.</p>'}</div>`;
+  return h;
+}
+function conductSheet(id,kind){const x=id?CONDB().find(e=>e.id===id):{rid:CDR||"",kind,type:CONDUCT[kind].types[0][0],cause:CONDUCT[kind].causes[0][0],date:today(),details:"",extra:"",until:""};if(!x)return;const K=CONDUCT[x.kind];
+  const mine=!VIEWER||!x.by||x.by===myEmail();
+  openSheet(`<h3>${x.kind==="award"?"Award":"Penalty"}</h3>
+  ${field("Resident",`<select class="f2" id="c_r">${opt("","—",!x.rid)}${sortedRes().map(r=>opt(r.id,r.name+" (R"+r.level+")",r.id===x.rid)).join("")}</select>`)}
+  <div class="note" id="c_hist" style="margin:-4px 0 8px"></div>
+  <div class="row"><div style="flex:1;min-width:140px">${field("Date",inp("c_d",x.date,'type="date"'))}</div><div style="flex:2;min-width:160px">${field(x.kind==="award"?"Reason":"Cause",`<select class="f2" id="c_c">${K.causes.map(c=>opt(c[0],c[1]+" · "+c[2],c[0]===x.cause)).join("")}</select>`)}</div></div>
+  ${field("Type",`<select class="f2" id="c_t">${K.types.map(t=>opt(t[0],t[1]+" · "+t[2],t[0]===x.type)).join("")}</select>`)}<div class="note" id="c_th" style="margin:-4px 0 8px"></div>
+  <div class="row"><div style="flex:1;min-width:120px" id="c_exw">${field("How many",inp("c_x",x.extra,'placeholder="e.g. 2"'))}</div><div style="flex:1;min-width:140px" id="c_uw">${field("Until",inp("c_u",x.until,'type="date"'))}</div></div>
+  ${field("What happened",`<textarea class="f2" id="c_det" rows="3" placeholder="Facts only: date, place, what happened">${esc(x.details)}</textarea>`)}
+  ${x.byName?`<p class="note">Recorded by ${esc(x.byName)}</p>`:""}
+  <div class="row">${mine?'<button class="btn p" id="c_save">Save</button>':""}<button class="btn" id="c_cancel">${mine?"Cancel":"Close"}</button>${id&&mine?'<button class="btn d" id="c_del">Delete</button>':""}</div>`);
+  if(!mine)$$("#sheet input,#sheet select,#sheet textarea").forEach(e=>e.disabled=true);
+  const upd=()=>{const t=cType(x.kind,$("#c_t").value);$("#c_th").textContent=t[3];$("#c_exw").style.display=["shifts","fewer","moreops"].includes(t[0])?"":"none";$("#c_uw").style.display=["theatre","moreops"].includes(t[0])?"":"none";
+    const rid=$("#c_r").value,P=CONDB().filter(y=>y.rid===rid&&y.kind==="penalty"&&y.id!==id&&y.date>=addD(today(),-365));$("#c_hist").textContent=rid?(P.length?"Penalties in the last 12 months: "+P.map(y=>cType("penalty",y.type)[1]+" ("+fd(y.date)+")").join(", "):"No penalties in the last 12 months."):""};
+  $("#c_t").onchange=upd;$("#c_r").onchange=upd;upd();
+  $("#c_cancel").onclick=closeSheet;if(!mine)return;
+  $("#c_save").onclick=()=>{const t=$("#c_t").value;const v={rid:$("#c_r").value,kind:x.kind,type:t,cause:$("#c_c").value,date:$("#c_d").value,details:$("#c_det").value.trim(),extra:["shifts","fewer","moreops"].includes(t)?$("#c_x").value.trim():"",until:["theatre","moreops"].includes(t)?$("#c_u").value:""};
+    if(!v.rid||!v.date){toast("Choose the resident and date");return}if(!v.details){toast("Write what happened");return}
+    recPut("conduct",Object.assign({id:id||uid(),by:x.by||(VIEWER?myEmail():"admin"),byName:x.byName||(MYTR||"Program director"),at:x.at||new Date().toISOString()},v));closeSheet();toast("Saved");rerender()};
+  if(id)$("#c_del").onclick=()=>{if(!confirm("Delete this record?"))return;recDel("conduct",id);closeSheet();rerender()};
+}
+function bindConduct(){const on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};const ch=(sel,f)=>{const e=$(sel);if(e)e.onchange=f};
+  ch("#cdr",()=>{CDR=$("#cdr").value;rerender()});ch("#cdk",()=>{CDK=$("#cdk").value;rerender()});
+  on("#addpen",()=>conductSheet(null,"penalty"));on("#addaw",()=>conductSheet(null,"award"));
+  $$("[data-cd]").forEach(b=>b.onclick=()=>conductSheet(b.dataset.cd));
+  on("#cdcsv",()=>{const rows=[["Date","Resident","Year","Award or penalty","Type","Cause","How many","Until","What happened","Recorded by"]].concat(CONDB().slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{const r=resById(x.rid)||{};return [x.date,r.name||"",r.level?"R"+r.level:"",x.kind,cType(x.kind,x.type)[1],cCause(x.kind,x.cause)[1],x.extra,x.until,x.details,x.byName]}));download(new Blob([csv(rows)],{type:"text/csv"}),"awards-and-penalties.csv")});
+  const cs=$("#cmsave");if(cs)cs.onclick=()=>{ST.conductCm=$$("[data-cm]").filter(c=>c.checked).map(c=>c.dataset.cm);save();syncRes();toast("Saved")};
+}
+
 /* ================= exam years ================= */
 const exYears=e=>Array.isArray(e.years)&&e.years.length?e.years:null;
 const examFor=(e,r)=>!!r&&(!exYears(e)||exYears(e).includes(r.level)||(ST.scores[e.id]||{})[r.id]!=null);
@@ -980,7 +1059,7 @@ const periodSel=(id,v)=>`<select class="f2" id="${id}">${opt("all","All time",v=
 function logCounts(rid,a,b){const c={};LOGB().filter(x=>okRec(x)&&x.rid===rid&&x.date>=a&&x.date<=b).forEach(x=>{const k=x.proc||("t:"+(x.procText||"Other"));const o=c[k]=c[k]||[0,0,0,0,0];o[+x.role||0]+=(+x.n||1)});return c}
 function vLogTrainer(){
   const L=LOGB().filter(x=>x.sup===MYTR),P=L.filter(x=>x.status==="pending").sort((a,b)=>b.date.localeCompare(a.date)),D=L.filter(x=>x.status!=="pending").sort((a,b)=>b.date.localeCompare(a.date));
-  const row=(x,act)=>{const r=resById(x.rid)||{name:"—"};return `<div class="kv"><span>${fd(x.date)} <b>${esc(r.name)}</b> · ${esc(procName(x))}${+x.n>1?" ×"+x.n:""}${act?"":" "+stTag(x.status||"ok")}<br><span class="note">${LV[+x.role||0]}${x.notes?" · "+esc(x.notes):""}</span></span>${act?`<span style="display:flex;gap:4px"><button class="btn sm mini p" data-lok="${x.id}">Approve</button><button class="btn sm mini" data-lno="${x.id}">Decline</button></span>`:""}</div>`};
+  const row=(x,act)=>{const r=resById(x.rid)||{name:"—"};return `<div class="kv"><span class="w">${fd(x.date)} <b>${esc(r.name)}</b> · ${esc(procName(x))}${+x.n>1?" ×"+x.n:""}${act?"":" "+stTag(x.status||"ok")}<br><span class="note">${LV[+x.role||0]}${x.notes?" · "+esc(x.notes):""}</span></span>${act?`<span style="display:flex;gap:4px"><button class="btn sm mini p" data-lok="${x.id}">Approve</button><button class="btn sm mini" data-lno="${x.id}">Decline</button></span>`:""}</div>`};
   return `<h2>Cases you supervised</h2><p class="lead">Residents name you as the supervising consultant. Approve the cases you saw.</p>
   <h3>Waiting for you (${P.length})</h3><div class="panel">${P.map(x=>row(x,true)).join("")||'<p class="note">Nothing waiting.</p>'}</div>
   <h3>Decided</h3><div class="panel">${D.slice(0,40).map(x=>row(x,false)).join("")||'<p class="note">None yet.</p>'}</div>`;
@@ -1008,9 +1087,9 @@ function vLog(){
   h+=`<div class="panel" style="overflow-x:auto;margin-top:12px"><table class="mx log"><thead><tr><th>Procedure</th><th title="Expected level this year">R${r.level}</th><th>O</th><th>A</th><th>S</th><th>I</th><th style="text-align:right">Performed / target</th></tr></thead><tbody>${rows||'<tr><td colspan="7" class="note">No cases logged in this period.</td></tr>'}</tbody></table>
   <p class="note" style="margin:8px 0 0">O observed · A assisted · S performed under supervision · I independent. The R${r.level} column is the expected level from Operative levels.</p></div>`;
   const PW=LOGB().filter(x=>x.rid===r.id&&x.status==="pending").sort((x,y)=>y.date.localeCompare(x.date));
-  if(PW.length)h+=`<h3 class="noprint">Waiting for approval (${PW.length})</h3><div class="panel noprint">${PW.map(x=>`<div class="kv"><span>${fd(x.date)} <b>${esc(procName(x))}</b>${+x.n>1?" ×"+x.n:""}<br><span class="note">${LV[+x.role||0]}${x.sup?" · "+esc(x.sup):""}${x.notes?" · "+esc(x.notes):""}</span></span><span style="display:flex;gap:4px">${VIEWER?`<button class="btn sm mini" data-edlog="${x.id}">Edit</button>`:`<button class="btn sm mini p" data-lok="${x.id}">Approve</button><button class="btn sm mini" data-lno="${x.id}">Decline</button><button class="btn sm mini" data-edlog="${x.id}">Edit</button>`}</span></div>`).join("")}</div>`;
+  if(PW.length)h+=`<h3 class="noprint">Waiting for approval (${PW.length})</h3><div class="panel noprint">${PW.map(x=>`<div class="kv"><span class="w">${fd(x.date)} <b>${esc(procName(x))}</b>${+x.n>1?" ×"+x.n:""}<br><span class="note">${LV[+x.role||0]}${x.sup?" · "+esc(x.sup):""}${x.notes?" · "+esc(x.notes):""}</span></span><span style="display:flex;gap:4px">${VIEWER?`<button class="btn sm mini" data-edlog="${x.id}">Edit</button>`:`<button class="btn sm mini p" data-lok="${x.id}">Approve</button><button class="btn sm mini" data-lno="${x.id}">Decline</button><button class="btn sm mini" data-edlog="${x.id}">Edit</button>`}</span></div>`).join("")}</div>`;
   const E=LOGB().filter(x=>x.rid===r.id&&x.status!=="pending"&&x.date>=a&&x.date<=b).sort((x,y)=>y.date.localeCompare(x.date));
-  h+=`<h3>Cases</h3><div class="panel">${E.slice(0,60).map(x=>`<div class="kv"><span>${fd(x.date)} <b>${esc(procName(x))}</b>${+x.n>1?" ×"+x.n:""}${x.status==="rejected"?" "+stTag("rejected"):""}<br><span class="note">${LV[+x.role||0]}${x.sup?" · "+esc(x.sup):""}${x.notes?" · "+esc(x.notes):""}</span></span><span class="noprint">${VIEWER?"":`<button class="btn sm mini" data-edlog="${x.id}">Edit</button>`}</span></div>`).join("")||'<p class="note">None yet.</p>'}${E.length>60?`<p class="note">Showing the latest 60 of ${E.length}. Excel has all of them.</p>`:""}</div>`;
+  h+=`<h3>Cases</h3><div class="panel">${E.slice(0,60).map(x=>`<div class="kv"><span class="w">${fd(x.date)} <b>${esc(procName(x))}</b>${+x.n>1?" ×"+x.n:""}${x.status==="rejected"?" "+stTag("rejected"):""}<br><span class="note">${LV[+x.role||0]}${x.sup?" · "+esc(x.sup):""}${x.notes?" · "+esc(x.notes):""}</span></span><span class="noprint">${VIEWER?"":`<button class="btn sm mini" data-edlog="${x.id}">Edit</button>`}</span></div>`).join("")||'<p class="note">None yet.</p>'}${E.length>60?`<p class="note">Showing the latest 60 of ${E.length}. Excel has all of them.</p>`:""}</div>`;
   return h;
 }
 function procOptions(sel){const P=ST.procs||[];return [...new Set(P.map(p=>p.group))].map(g=>`<optgroup label="${esc(g)}">${P.filter(p=>p.group===g).map(p=>opt(p.id,p.name,p.id===sel)).join("")}</optgroup>`).join("")+opt("","Other (type below)",!sel)}
@@ -1049,7 +1128,7 @@ function vEvalRes(){const r=resById(MYRID);if(!r)return `<h2>My assessments</h2>
   <div class="kpis"><div><b>${E.filter(x=>x.type==="Mini-CEX").length}</b><span>Mini-CEX</span></div><div><b>${E.filter(x=>x.type==="DOPS").length}</b><span>DOPS</span></div><div><b>${p.length?avgArr(p)+"%":"—"}</b><span>average overall</span></div></div>
   <div class="panel">${E.map(evRow).join("")||'<p class="note">No assessments yet.</p>'}</div>`}
 const evRow=x=>{const r=resById(x.rid)||{name:"—"},v=evOverall(x),W=WBA[x.type];
-  return `<div class="kv" data-ev="${x.id}" style="cursor:pointer"><span>${fd(x.date)} ${VIEWER&&MYRID?"":`<b>${esc(r.name)}</b> `}<span class="tag">${esc(x.type)}</span><br><span class="note">${esc(x.focus||"")}${x.assessor?" · "+esc(x.assessor):""}</span></span><span>${v?`<b>${v}/${W.max}</b><div class="note">${W.band(v)}</div>`:"—"}</span></div>`};
+  return `<div class="kv" data-ev="${x.id}" style="cursor:pointer"><span class="w">${fd(x.date)} ${VIEWER&&MYRID?"":`<b>${esc(r.name)}</b> `}<span class="tag">${esc(x.type)}</span><br><span class="note">${esc(x.focus||"")}${x.assessor?" · "+esc(x.assessor):""}</span></span><span>${v?`<b>${v}/${W.max}</b><div class="note">${W.band(v)}</div>`:"—"}</span></div>`};
 function vEval(){
   if(VIEWER&&MYRID)return vEvalRes();
   if(VIEWER&&!MYTR)return `<h2>Assessments</h2><div class="empty">Your email is not linked to your name yet.</div>`;
@@ -1270,6 +1349,7 @@ function bind(){
   bindDuty();
   bindPhase1();
   bindPhase2();
+  bindConduct();
   bindMine();
   bindAccess();
 }
@@ -1296,7 +1376,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 const FBV="10.12.2",FB="https://www.gstatic.com/firebasejs/"+FBV+"/";
 let LIVE=null; // {auth,db,fs,user,role,unsub:[]}
 let CFG=null,pendingRender=false,writeT=null,lastWrite=0;
-const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime","duty","who","trainers","procs"];
+const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime","duty","who","trainers","procs","conductCm"];
 const PRIVATE_KEYS=["scores","att","rotTypes","rot","rp","graduates","theatre","frame","lecTypes","examTypes","yearStart","logbook","evals"];
 function pick(o,keys){const r={};keys.forEach(k=>{if(o[k]!==undefined)r[k]=o[k]});return r}
 function isEditing(){const a=document.activeElement;return $("#scrim").classList.contains("open")||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))}
@@ -1319,7 +1399,7 @@ async function initLive(){
   const app=A.initializeApp(CFG);const auth=AU.getAuth(app);
   let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache()})}catch(e){db=F.getFirestore(app)}
   LIVE={app,auth,db,fs:F,au:AU,user:null,role:null,unsub:[]};
-  AU.onAuthStateChanged(auth,u=>{LIVE.user=u;LIVE.unsub.forEach(f=>f());LIVE.unsub=[];LIVE.recSub=false;LIVE.resLoaded=false;CLOGS=null;CREQS=null;CEVALS=null;MYRID=null;MYTR=null;if(!u){signInScreen();return}
+  AU.onAuthStateChanged(auth,u=>{LIVE.user=u;LIVE.unsub.forEach(f=>f());LIVE.unsub=[];LIVE.recSub=false;LIVE.resLoaded=false;CLOGS=null;CREQS=null;CEVALS=null;CCOND=null;MYRID=null;MYTR=null;LIVE.condLoaded=false;if(!u){signInScreen();return}
     if(!u.emailVerified){verifyScreen();return}resolveRole()});
 }
 function shell(h){document.querySelector("nav.tabs").style.display="none";$("#psub").textContent="";$("#pname").textContent=ST.name||"ENT Residency Program";$("#view").innerHTML=`<div class="gate">${h}</div>`}
@@ -1356,7 +1436,7 @@ async function resolveRole(){
     const pub=await fs.getDoc(pubRef).catch(()=>null),prv=await fs.getDoc(prvRef).catch(()=>null);
     const pd=pub&&pub.exists()?pub.data():null,vd=prv&&prv.exists()?prv.data():null;
     if(!pd){migrate();seedTables();await pushNow();toast("Your program was uploaded to the cloud")}
-    else{const local={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};const keep={};["logbook","evals"].forEach(k=>{if((!vd||vd[k]===undefined)&&Array.isArray(ST[k])&&ST[k].length)keep[k]=ST[k]});ST=Object.assign({},DEF,pd,vd||{},local,keep);if(Object.keys(keep).length||pd.procs===undefined)setTimeout(()=>pushLive(),800);
+    else{const local={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};const keep={};["logbook","evals"].forEach(k=>{if((!vd||vd[k]===undefined)&&Array.isArray(ST[k])&&ST[k].length)keep[k]=ST[k]});ST=Object.assign({},DEF,pd,vd||{},local,keep);if(Object.keys(keep).length||pd.procs===undefined||pd.conductCm===undefined)setTimeout(()=>pushLive(),800);
       if(migrate()){seedTables();await pushNow();toast("Program updated to the new version")}else seedTables();saveLocal()}
     LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data();if(!d||s.metadata.hasPendingWrites)return;PRIVATE_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});seedTables();saveLocal();liveRender();if(["logbook","evals"].some(k=>d[k]===undefined&&ST[k]&&ST[k].length))pushLive()}));
     LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","lists"),s=>{LIVE.lists=s.data()||{admins:[],viewers:[]};syncRes();if(TAB==="settings")liveRender()},()=>{}));
@@ -1381,6 +1461,7 @@ function accessPanel(){
     <div class="row" style="margin-top:8px"><input id="newa" type="email" dir="ltr" placeholder="email@example.com" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button class="btn" id="adda">Add co-editor</button></div>
     <p class="note">Send them the app link. They create an account with the same email and confirm it. Choose the name next to each email so they see their own duties and lectures under My schedule.</p>
     <h3>Trainers</h3><p class="note">One name per line, written the same way as in the duty roster's specialist box.</p><textarea class="f2" id="trlist" rows="5">${esc(trainersList().join("\n"))}</textarea><div class="row" style="margin-top:6px"><button class="btn" id="trsave">Save trainers</button></div>
+    <h3>Awards and penalties committee</h3><p class="note">These consultants can open the Conduct tab and record awards and penalties. Link each one's email to their name above.</p><div class="panel attl">${trainersList().map(t=>`<label><input type="checkbox" data-cm="${esc(t)}" ${cmList().includes(t)?"checked":""}> ${esc(t)}</label>`).join("")||'<p class="note">Add trainers first.</p>'}</div><div class="row" style="margin-top:6px"><button class="btn" id="cmsave">Save committee</button></div>
     <div class="row" style="margin-top:10px">${ST.pinHash?'<button class="btn" id="pinset">Change PIN</button><button class="btn d" id="pinoff">Remove PIN</button>':'<button class="btn" id="pinset">Lock this device with a PIN</button>'}<button class="btn" id="signout2">Sign out</button></div></div>`}
   return `<h2>Live sync and access</h2><div class="panel noprint">
   <p>This program is saved on this device only. Connect it to Firebase (free, by Google) so you can edit it and everyone you choose sees the update straight away. Residents will see only the lecture schedule and exam dates.</p>
@@ -1420,9 +1501,18 @@ service cloud.firestore {
     function isTr(name) { return isViewer() && name is string && exists(/databases/$(db)/documents/access/res) && email() in resMap() && resMap()[email()] == 't:' + name; }
     function okEval() { return request.resource.data.rid is string && request.resource.data.by == email() && isTr(request.resource.data.assessor) && request.resource.data.keys().hasOnly(['rid','type','date','assessor','setting','focus','scores','strengths','improve','action','at','by']); }
     function trDecides() { return isTr(resource.data.sup) && resource.data.status == 'pending' && request.resource.data.status in ['ok','rejected'] && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','decidedBy']); }
+    function isCm() { return isViewer() && exists(/databases/$(db)/documents/access/conduct) && email() in get(/databases/$(db)/documents/access/conduct).data.members; }
+    function okCond() { return request.resource.data.rid is string && request.resource.data.by == email() && request.resource.data.kind in ['penalty','award'] && request.resource.data.keys().hasOnly(['rid','kind','type','cause','date','details','extra','until','byName','by','at']); }
     function okNew() { return request.resource.data.status == 'pending' && request.resource.data.keys().hasOnly(['rid','kind','date','proc','procText','role','n','sup','notes','from','to','withRid','withDate','reason','status','at','by']); }
     match /access/lists { allow read, write: if isAdmin(); }
     match /access/res { allow read, write: if isAdmin(); }
+    match /access/conduct { allow read, write: if isAdmin(); }
+    match /conduct/{id} {
+      allow read: if isAdmin() || isCm() || isRes(resource.data.rid);
+      allow create: if isAdmin() || (isCm() && okCond());
+      allow update: if isAdmin() || (isCm() && resource.data.by == email() && okCond());
+      allow delete: if isAdmin() || (isCm() && resource.data.by == email());
+    }
     match /program/public { allow read: if isViewer(); allow write: if isAdmin(); }
     match /program/private { allow read, write: if isAdmin(); }
     match /logs/{id} {

@@ -525,7 +525,7 @@ function vHome(){
   if(MYRID)tiles=[tile("mine","📅","My schedule"),tile("theatre","🩺","My theatre days"),tile("exams","📝","My exams"),tile("lectures","🎓","My lectures"),tile("log","📒","My logbook"),tile("reqs","✉️","Leave or swap"),tile("assess","📊","My assessments"),tile("duty","🗓️","Duty roster"),tile("conduct","⭐","Awards and penalties",NC.length)];
   else if(MYTR)tiles=[tile("mine","📅","My schedule"),tile("log","📒","Cases to approve",PN.log),tile("assess","📊","Fill an assessment"),tile("theatre","🩺","Theatre"),tile("duty","🗓️","Duty roster"),tile("lectures","🎓","Lectures"),tile("exams","📝","Exams")].concat(isCm()?[tile("conduct","⭐","Awards and penalties")]:[]);
   else if(VIEWER)tiles=[tile("mine","📅","My schedule"),tile("theatre","🩺","Theatre"),tile("exams","📝","Exams"),tile("lectures","🎓","Lectures"),tile("duty","🗓️","Duty roster")];
-  else tiles=[tile("duty","🗓️","Duty roster"),tile("theatre","🩺","Theatre"),tile("reqs","✉️","Requests",PN.reqs),tile("log","📒","Logbook",PN.log),tile("lectures","🎓","Lectures"),tile("exams","📝","Exams"),tile("people","👥","Residents"),tile("assess","📊","Assessments"),tile("conduct","⭐","Awards and penalties"),tile("report","📈","Reports"),tile("settings","⚙️","Settings")];
+  else tiles=[tile("duty","🗓️","Duty roster"),tile("theatre","🩺","Theatre"),tile("reqs","✉️","Requests",PN.reqs),tile("log","📒","Logbook",PN.log),tile("lectures","🎓","Lectures"),tile("exams","📝","Exams"),tile("people","👥","Residents",PN.people),tile("assess","📊","Assessments"),tile("conduct","⭐","Awards and penalties"),tile("report","📈","Reports"),tile("settings","⚙️","Settings")];
   const hr=new Date().getHours(),greet=hr<12?"Good morning":hr<18?"Good afternoon":"Good evening",ic=hr<6||hr>=18?"🌙":hr<12?"☀️":"🌤️";
   const day=Math.floor(Date.now()/864e5),line=HELLO_LINES[day%HELLO_LINES.length];
   return `<div class="hello"><div class="hi-g"><span>${ic}</span> <span>${greet}</span></div><div class="hi-n">${nm?`<span>Welcome</span><span>${LANG==="ar"?"،":","}</span> <span data-notr>${esc(nm)}</span>`:"<span>Welcome</span>"}</div><p class="hi-l">${line}</p><p class="hi-q">What would you like to do?</p></div>${today_}<div class="tiles">${tiles.join("")}</div>`+
@@ -713,7 +713,7 @@ function rotSheet(rid,bid,back){
 /* ================= residents ================= */
 function vResidents(){
   const t=today();
-  let h=`<h2>Residents</h2><div class="panel noprint"><div class="row" style="align-items:flex-end"><label class="f" style="flex:2;min-width:150px;margin:0"><span>Name</span><input class="f2" id="rn" placeholder="Dr. …"></label><label class="f" style="flex:1;min-width:80px;margin:0"><span>Year</span><select class="f2" id="rl">${[1,2,3,4,5,6].map(y=>opt(y,"R"+y)).join("")}</select></label><label class="f" style="flex:1;min-width:130px;margin:0"><span>Board start</span><input class="f2" type="date" id="rbs"></label><button class="btn p" id="radd">Add</button></div></div>`;
+  let h=`<h2>Residents</h2>${regPanel()}<div class="panel noprint"><div class="row" style="align-items:flex-end"><label class="f" style="flex:2;min-width:150px;margin:0"><span>Name</span><input class="f2" id="rn" placeholder="Dr. …"></label><label class="f" style="flex:1;min-width:80px;margin:0"><span>Year</span><select class="f2" id="rl">${[1,2,3,4,5,6].map(y=>opt(y,"R"+y)).join("")}</select></label><label class="f" style="flex:1;min-width:130px;margin:0"><span>Board start</span><input class="f2" type="date" id="rbs"></label><button class="btn p" id="radd">Add</button></div></div>`;
   if(!ST.residents.length)h+=`<div class="empty" style="margin-top:12px">No residents yet.</div>`;
   else h+=`<div class="panel" style="margin-top:12px">`+sortedRes().map(r=>{const p=ST.rp[r.id]||{};const m=rotAt(r,t);
     const pres=ST.lectures.filter(l=>l.presenter===r.id);const dn=pres.filter(l=>l.status==="done").length;
@@ -737,6 +737,7 @@ function profile(id){
    <div class="row"><div style="flex:1;min-width:140px">${field("Phone",inp("p_phone",p.phone,'dir="ltr"'))}</div><div style="flex:1;min-width:140px">${field("Email",inp("p_email",p.email,'dir="ltr"'))}</div></div>
    ${field("Notes",inp("p_notes",p.notes))}<button class="btn p" id="p_save">Save details</button>
   </div>
+  <div class="sec-h"><h3>Board record</h3><button class="btn sm" id="p_ms">Edit</button></div>${msView(p)}
   <div class="sec-h"><h3>Rotations</h3><button class="btn sm" id="p_addrot">+ Add</button></div>
   <div class="panel">${B.length?B.map(b=>`<div class="kv"><span><span class="sw" style="background:${blkColor(b)}"></span>${esc(blkName(b))}${b.from<=t&&t<=b.to?' <span class="tag">Now</span>':""}${b.notes?`<br><span class="note">${esc(b.notes)}</span>`:""}</span><span>${fd(b.from)} – ${fdy(b.to)} <button class="btn sm mini" data-erot="${b.id}">Edit</button></span></div>`).join(""):'<p class="note">No rotations yet.</p>'}</div>
   <h3>Lectures presented</h3><div class="panel">${pres.length?pres.map(l=>`<div class="kv"><span>${fd(l.date)}</span><span>${esc(l.title)} <span class="note">${esc(l.type||"")}</span>${stBadge(l.status)}</span></div>`).join(""):'<p class="note">None assigned.</p>'}</div>
@@ -747,7 +748,7 @@ function profile(id){
   <div class="row" style="margin-top:14px"><button class="btn" id="p_promote">Move to R${r.level+1}</button><button class="btn" id="p_grad">Graduate</button><button class="btn d" id="p_del">Remove</button></div>`);
   $("#p_close").onclick=closeSheet;
   $("#p_save").onclick=()=>{r.name=$("#p_name").value.trim()||r.name;r.level=+$("#p_lvl").value;Object.assign(p,{boardStart:$("#p_bs").value,since:$("#p_since").value,phone:$("#p_phone").value.trim(),email:$("#p_email").value.trim(),notes:$("#p_notes").value.trim()});save();toast("Saved");profile(id);rerender()};
-  $("#p_addrot").onclick=()=>rotSheet(id,null,id);
+  $("#p_addrot").onclick=()=>rotSheet(id,null,id);$("#p_ms").onclick=()=>msSheet(id);
   $$("[data-erot]").forEach(b=>b.onclick=()=>rotSheet(id,b.dataset.erot,id));
   $("#p_promote").onclick=()=>{if(!confirm(`Move ${r.name} to R${r.level+1}?`))return;promote(r,false);save();profile(id);rerender()};
   $("#p_grad").onclick=()=>{if(!confirm(`Graduate ${r.name}? They move to the graduates list with all their records kept.`))return;promote(r,true);save();closeSheet();rerender()};
@@ -958,7 +959,7 @@ const okRec=x=>!x.status||x.status==="ok";
 const myEmail=()=>LIVE&&LIVE.user?String(LIVE.user.email||"").trim().toLowerCase():"";
 function REQB(){if(CREQS)return CREQS;if(!Array.isArray(ST.reqs))ST.reqs=[];return ST.reqs}
 const LOCALK={logs:"logbook",reqs:"reqs",evals:"evals",conduct:"conduct"};
-const liveArr=c=>c==="logs"?CLOGS:c==="reqs"?CREQS:c==="conduct"?CCOND:CEVALS;
+const liveArr=c=>c==="logs"?CLOGS:c==="reqs"?CREQS:c==="conduct"?CCOND:c==="profiles"?CPROF:CEVALS;
 const recArr=c=>c==="logs"?LOGB():c==="reqs"?REQB():c==="conduct"?CONDB():EVS();
 function recPut(c,x){
   if(LIVE&&liveArr(c)){const d=JSON.parse(JSON.stringify(x));delete d.id;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,c,x.id),d).catch(e=>toast("Could not save: "+(e.code||e.message)));return}
@@ -968,7 +969,7 @@ function recDel(c,id){
   ST[LOCALK[c]]=recArr(c).filter(e=>e.id!==id);save()}
 function subRecs(){if(!LIVE||!LIVE.role||LIVE.recSub)return;const {fs,db}=LIVE;
   let Q;const col=c=>fs.collection(db,c),W=(c,k,v)=>fs.query(col(c),fs.where(k,"==",v));
-  if(LIVE.role==="admin")Q={logs:col("logs"),reqs:col("reqs"),evals:col("evals"),conduct:col("conduct")};
+  if(LIVE.role==="admin")Q={logs:col("logs"),reqs:col("reqs"),evals:col("evals"),conduct:col("conduct"),profiles:col("profiles")};
   else{const k=MYHASH?WHO()[MYHASH]||"":"";
     if(k.startsWith("r:")){MYRID=k.slice(2);Q={logs:W("logs","rid",MYRID),reqs:W("reqs","rid",MYRID),evals:W("evals","rid",MYRID),conduct:W("conduct","rid",MYRID)}}
     else if(k.startsWith("t:")){MYTR=k.slice(2);CREQS=[];Q={logs:W("logs","sup",MYTR),evals:W("evals","by",myEmail())};if(cmList().includes(MYTR))Q.conduct=col("conduct")}
@@ -976,8 +977,8 @@ function subRecs(){if(!LIVE||!LIVE.role||LIVE.recSub)return;const {fs,db}=LIVE;
   LIVE.recSub=true;
   Object.entries(Q).forEach(([c,q])=>{
     LIVE.unsub.push(fs.onSnapshot(q,s=>{const a=s.docs.map(d=>Object.assign({},d.data(),{id:d.id}));const first=liveArr(c)===null;
-      if(c==="logs")CLOGS=a;else if(c==="reqs")CREQS=a;else if(c==="conduct")CCOND=a;else CEVALS=a;
-      if(first&&LIVE.role==="admin"&&c!=="reqs"&&c!=="conduct"){const lk=LOCALK[c];if(Array.isArray(ST[lk])&&ST[lk].length){ST[lk].forEach(x=>recPut(c,Object.assign({status:"ok",by:"admin"},x)));ST[lk]=[];pushLive()}}
+      if(c==="logs")CLOGS=a;else if(c==="reqs")CREQS=a;else if(c==="conduct")CCOND=a;else if(c==="profiles")CPROF=a;else CEVALS=a;
+      if(first&&LIVE.role==="admin"&&c!=="reqs"&&c!=="conduct"&&c!=="profiles"){const lk=LOCALK[c];if(Array.isArray(ST[lk])&&ST[lk].length){ST[lk].forEach(x=>recPut(c,Object.assign({status:"ok",by:"admin"},x)));ST[lk]=[];pushLive()}}
       liveRender()},e=>console.warn(c,e.code)))});
   if(LIVE.role==="admin"){LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","conduct"),s=>{LIVE.cond=(s.data()||{}).members||[];LIVE.condLoaded=true;syncRes()},()=>{}));
     LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","res"),s=>{LIVE.res=s.data()||{};LIVE.resLoaded=true;syncRes()},()=>{}))};
@@ -989,7 +990,7 @@ function syncRes(){if(!LIVE||LIVE.role!=="admin"||!LIVE.resLoaded)return;const L
     if(JSON.stringify(cm)!==JSON.stringify((LIVE.cond||[]).slice().sort())){LIVE.cond=cm;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"access","conduct"),{members:cm}).catch(e=>console.warn("cm",e.code))}}
   const s=o=>JSON.stringify(Object.keys(o).sort().map(k=>[k,o[k]]));if(s(want)===s(LIVE.res||{}))return;
   LIVE.res=want;LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"access","res"),want).catch(e=>console.warn("res",e.code))}
-const pendN=()=>({log:LOGB().filter(x=>x.status==="pending"&&(!MYTR||x.sup===MYTR)).length,reqs:REQB().filter(x=>x.status==="pending").length});
+const pendN=()=>({log:LOGB().filter(x=>x.status==="pending"&&(!MYTR||x.sup===MYTR)).length,reqs:REQB().filter(x=>x.status==="pending").length,people:VIEWER?0:(typeof CPROF!=="undefined"&&CPROF?CPROF.filter(x=>x.status==="pending").length:0)});
 
 /* ================= requests (leave, duty swap) ================= */
 const stTag=s=>s==="pending"?'<span class="tag" style="background:#FEF3C7;color:#92400E">Waiting</span>':s==="rejected"?'<span class="badge b-not">Declined</span>':'<span class="badge b-done">Approved</span>';
@@ -1392,6 +1393,7 @@ function bind(){
   const v=$("#view"),on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};
   on("#shareday",e=>shareDay(e.currentTarget.dataset.d));
   $$("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  $$("[data-reg]").forEach(b=>b.onclick=()=>regSheet(b.dataset.reg));
   // lectures
   v.querySelectorAll("[data-lf]").forEach(b=>b.onclick=()=>{LF=b.dataset.lf;render()});
   const lq=$("#lq");if(lq){lq.oninput=()=>{LQ=lq.value;clearTimeout(lq.t);lq.t=setTimeout(()=>{rerender();const n=$("#lq");n.focus();n.setSelectionRange(n.value.length,n.value.length)},350)}}
@@ -1518,8 +1520,7 @@ async function resolveRole(){
   let role=null;
   try{await fs.getDoc(fs.doc(db,"program","private"));role="admin"}catch(e){}
   if(!role){try{await fs.getDoc(fs.doc(db,"program","public"));role="viewer"}catch(e){}}
-  if(!role){shell(`<h2>No access yet</h2><p>Your account <b dir="ltr">${esc(LIVE.user.email)}</b> is not on this program's list.</p><p class="note">Send this email to your program director so they can add you, then press Try again.</p><div class="row"><button class="btn p" id="ta">Try again</button><button class="btn" id="so">Sign out</button></div>`);
-    $("#ta").onclick=resolveRole;$("#so").onclick=()=>LIVE.au.signOut(LIVE.auth);return}
+  if(!role){profGate();return}
   LIVE.role=role;VIEWER=role!=="admin";emailHash(LIVE.user.email).then(h=>{MYHASH=h;subRecs();liveRender()});document.querySelector("nav.tabs").style.display="";
   const pubRef=fs.doc(db,"program","public"),prvRef=fs.doc(db,"program","private");
   if(role==="admin"){
@@ -1593,7 +1594,8 @@ service cloud.firestore {
     function trDecides() { return isTr(resource.data.sup) && resource.data.status == 'pending' && request.resource.data.status in ['ok','rejected'] && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','decidedBy']); }
     function isCm() { return isViewer() && exists(/databases/$(db)/documents/access/conduct) && email() in get(/databases/$(db)/documents/access/conduct).data.members; }
     function okCond() { return request.resource.data.rid is string && request.resource.data.by == email() && request.resource.data.kind in ['penalty','award'] && request.resource.data.keys().hasOnly(['rid','kind','type','cause','date','details','extra','until','byName','by','at']); }
-    function okNew() { return request.resource.data.status == 'pending' && request.resource.data.keys().hasOnly(['rid','kind','date','proc','procText','role','n','sup','notes','from','to','withRid','withDate','reason','status','at','by']); }
+    function okNew() { return request.resource.data.status == 'pending' && request.resource.data.keys().hasOnly(['rid','kind','date','proc','procText','role','n','sup','notes','from','to','withRid','withDate','reason','status','at','by','pin','pfile']); }
+    function okProf() { return request.resource.data.email == email() && request.resource.data.status == 'pending' && request.resource.data.keys().hasOnly(['email','name','phone','boardStart','susp','ms','status','at']); }
     match /access/lists { allow read, write: if isAdmin(); }
     match /access/res { allow read, write: if isAdmin(); }
     match /access/conduct { allow read, write: if isAdmin(); }
@@ -1616,6 +1618,12 @@ service cloud.firestore {
       allow create: if isAdmin() || okEval();
       allow update: if isAdmin() || (resource.data.by == email() && okEval());
       allow delete: if isAdmin() || (isViewer() && resource.data.by == email());
+    }
+    match /profiles/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if isAdmin() || (signedIn() && request.auth.uid == uid && okProf());
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid && resource.data.status == 'pending' && okProf());
+      allow delete: if isAdmin();
     }
     match /reqs/{id} {
       allow read: if isAdmin() || isRes(resource.data.rid);
@@ -1674,9 +1682,12 @@ const AR={
 "Write a valid email":"اكتب إيميل صحيح","Saved":"تم الحفظ","Could not save":"ما زبط الحفظ","Imported":"تم الاستيراد","Added":"تمت الإضافة","Copied — paste it in the group":"تم النسخ — الصقه بالجروب","That file could not be read":"ما قدرنا نقرأ الملف","Program updated to the new version":"تم تحديث البرنامج للنسخة الجديدة","Your program was uploaded to the cloud":"تم رفع البرنامج للسحابة","Live sync unavailable offline — showing this device's copy":"المزامنة مش متاحة بدون إنترنت — بنعرض نسخة الجهاز","Saved to the cloud":"تم الحفظ بالسحابة","Saving…":"جاري الحفظ…","Preparing…":"جاري التحضير…","Downloaded":"تم التنزيل",
 "Add a name and date":"أضف اسم وتاريخ","Add a title and date":"أضف عنوان وتاريخ","Choose a valid period":"اختار فترة صحيحة","Choose the day and the resident":"اختار اليوم والمقيم","Choose the resident and date":"اختار المقيم والتاريخ","Choose the resident":"اختار المقيم","Choose the resident, date and procedure":"اختار المقيم والتاريخ والعملية",
 "Delete this lecture?":"حذف هذه المحاضرة؟","Delete this exam and its results?":"حذف هذا الامتحان ونتائجه؟","Delete ALL lectures and their attendance? Exams are kept.":"حذف كل المحاضرات وحضورها؟ الامتحانات بتضل.","Are you sure? This cannot be undone unless you have a backup.":"متأكد؟ ما بترجع إلا إذا عندك نسخة احتياطية.","Replace everything with this backup?":"استبدال كل إشي بهاي النسخة الاحتياطية؟",
-"Monday":"الاثنين","Tuesday":"الثلاثاء","Wednesday":"الأربعاء","Thursday":"الخميس","Friday":"الجمعة","Saturday":"السبت","Sunday":"الأحد","Week":"الأسبوع","Month":"الشهر","Today":"اليوم","Ward":"القسم","Quiz":"Quiz","Forgot PIN?":"نسيت الرمز؟","Sign out and remove the PIN from this device? Sign in again with your email and password, then set a new PIN.":"تسجيل خروج وإزالة الرمز من هذا الجهاز؟ ادخل مرة ثانية بإيميلك وكلمة السر، وبعدها حط رمز جديد.","Ask the program director to reset this device":"اطلب من مدير البرنامج يعيد ضبط هذا الجهاز","Home":"الرئيسية","Welcome":"أهلاً وسهلاً","You have a new record from the program committee":"عندك سجل جديد من لجنة البرنامج","You have a new award":"عندك مكافأة جديدة","Tap to read it.":"اضغط لتقرأه.","Good morning":"صباح الخير","Good afternoon":"نهارك سعيد","Good evening":"مساء الخير",",":"،","We wish you a productive and successful day.":"نتمنى لك يوماً موفقاً ومليئاً بالإنجازات.","Every case today is a step closer to being the surgeon you want to be.":"كل حالة اليوم خطوة أقرب للجرّاح اللي بتطمح تكونه.","Glad to have you with us. Have a great day.":"منوّر البرنامج، ونتمنالك يوم حلو.","Your effort today builds your skills for tomorrow.":"تعبك اليوم هو مهارتك بكرة.","Good to see you. Wishing you a smooth day in the department.":"سعداء بوجودك، ونتمنالك يوم هادي بالقسم.","Learn something new today, and teach someone else.":"تعلّم إشي جديد اليوم، وعلّمه لغيرك.","Thank you for your hard work and commitment.":"شكراً على تعبك والتزامك.","What would you like to do?":"شو حابب تعمل؟","My theatre days":"أيام عملياتي","My exams":"امتحاناتي","My lectures":"محاضراتي","Leave or swap":"إجازة أو تبديل","Cases to approve":"حالات للموافقة","Fill an assessment":"تعبئة تقييم","24 duty":"مناوبة 24","Morning duty":"دوام صباحي","On leave":"إجازة","Nothing on the roster":"ما في دوام بالجدول","Signed in as":"مسجّل باسم","Patient initials":"أول حرفين من اسم المريض","Patient file number":"رقم ملف المريض","e.g. AS":"مثلاً ع ص","e.g. 123456":"مثلاً 123456","No patient ID":"ناقص بيانات المريض","Required. First letter of the patient's first name and of the family name, and the hospital file number.":"إجباري. أول حرف من اسم المريض وأول حرف من اسم العائلة، ورقم ملف المستشفى.","Can't approve: patient initials and file number are missing":"ما بتنفع الموافقة: ناقص حروف اسم المريض ورقم الملف","Write the patient's 2 initials and file number":"اكتب أول حرفين من اسم المريض ورقم ملفه","morning":"صباحي","All":"الكل","Attendance":"الحضور","Clinic":"العيادة","Emergency":"الطوارئ","General":"عام","Last":"آخر مرة","Presenter":"المحاضر","Resident":"المقيم","Setting":"المكان","To":"إلى","Type":"النوع","Reading":"قراءة","or":"أو","performed":"منفّذة","Other (type below)":"أخرى (اكتبها تحت)","Facts only: date, place, what happened":"حقائق فقط: التاريخ، المكان، شو صار","e.g. 2":"مثلاً 2","e.g. Dr. … (consultant)":"مثلاً د. … (استشاري)","Dr. …":"د. …","Cycle A (foundations)":"الدورة A (الأساسيات)","Cycle B (advanced)":"الدورة B (المتقدمة)","Done 0 ·":"معطاة 0 ·","trainer":"مدرّب"
+"Monday":"الاثنين","Tuesday":"الثلاثاء","Wednesday":"الأربعاء","Thursday":"الخميس","Friday":"الجمعة","Saturday":"السبت","Sunday":"الأحد","Week":"الأسبوع","Month":"الشهر","Today":"اليوم","Ward":"القسم","Quiz":"Quiz","Promotion from R1 to R2":"ترفيع من سنة أولى لثانية","Promotion from R3 to R4":"ترفيع من ثالثة لرابعة","Promotion from R4 to R5":"ترفيع من رابعة لخامسة","Full name":"الاسم الكامل","Mobile number":"رقم الجوال","Suspension periods":"فترات الإيقاف","Any time the training was stopped. Leave empty if none.":"أي فترة توقف فيها التدريب. اتركها فاضية إذا ما في.","+ Add a period":"+ إضافة فترة","Exams passed":"الامتحانات اللي اجتزتها","Tick each one you passed and write its date.":"علّم على كل امتحان اجتزته واكتب تاريخه.","Reason":"السبب","Welcome to the program":"أهلاً بك في البرنامج","Before you start, fill in your details. The program director checks them and approves your account.":"قبل ما تبلّش، عبّي بياناتك. مدير البرنامج بيراجعها وبيوافق على حسابك.","Send for approval":"إرسال للموافقة","Write your full name":"اكتب اسمك الكامل","Write a valid mobile number":"اكتب رقم جوال صحيح","Choose the board start date":"اختار تاريخ بداية البورد","Check the suspension dates":"راجع تواريخ الإيقاف","Write the date of each exam you passed":"اكتب تاريخ كل امتحان اجتزته","Could not send: ":"ما زبط الإرسال: ","Your details were sent to the program director for review. You can open the program once they approve them.":"انبعتت بياناتك لمدير البرنامج للمراجعة. بتقدر تفتح البرنامج بعد الموافقة.","Check again":"تحقق مرة ثانية","Edit my details":"تعديل بياناتي","Registration not approved":"ما تمت الموافقة على التسجيل","Please contact the program director.":"تواصل مع مدير البرنامج لو سمحت.","Your registration was approved":"تمت الموافقة على تسجيلك","Press Continue to open the program.":"اضغط متابعة لتفتح البرنامج.","Continue":"متابعة","Review":"مراجعة","Review registration":"مراجعة التسجيل","This person is":"هذا الشخص","A new resident":"مقيم جديد","Account":"الحساب","Approving adds this email to the program, links it to the resident, and saves these details in the resident's file.":"الموافقة بتضيف الإيميل للبرنامج، وبتربطه بالمقيم، وبتحفظ البيانات بملفه.","Save changes":"حفظ التعديلات","Reject":"رفض","Reject this registration?":"رفض هذا التسجيل؟","Approved":"تمت الموافقة","Board record":"السجل بالبورد","None.":"لا يوجد.","None recorded.":"ما في إشي مسجّل.","Sign out":"تسجيل خروج","Forgot PIN?":"نسيت الرمز؟","Sign out and remove the PIN from this device? Sign in again with your email and password, then set a new PIN.":"تسجيل خروج وإزالة الرمز من هذا الجهاز؟ ادخل مرة ثانية بإيميلك وكلمة السر، وبعدها حط رمز جديد.","Ask the program director to reset this device":"اطلب من مدير البرنامج يعيد ضبط هذا الجهاز","Home":"الرئيسية","Welcome":"أهلاً وسهلاً","You have a new record from the program committee":"عندك سجل جديد من لجنة البرنامج","You have a new award":"عندك مكافأة جديدة","Tap to read it.":"اضغط لتقرأه.","Good morning":"صباح الخير","Good afternoon":"نهارك سعيد","Good evening":"مساء الخير",",":"،","We wish you a productive and successful day.":"نتمنى لك يوماً موفقاً ومليئاً بالإنجازات.","Every case today is a step closer to being the surgeon you want to be.":"كل حالة اليوم خطوة أقرب للجرّاح اللي بتطمح تكونه.","Glad to have you with us. Have a great day.":"منوّر البرنامج، ونتمنالك يوم حلو.","Your effort today builds your skills for tomorrow.":"تعبك اليوم هو مهارتك بكرة.","Good to see you. Wishing you a smooth day in the department.":"سعداء بوجودك، ونتمنالك يوم هادي بالقسم.","Learn something new today, and teach someone else.":"تعلّم إشي جديد اليوم، وعلّمه لغيرك.","Thank you for your hard work and commitment.":"شكراً على تعبك والتزامك.","What would you like to do?":"شو حابب تعمل؟","My theatre days":"أيام عملياتي","My exams":"امتحاناتي","My lectures":"محاضراتي","Leave or swap":"إجازة أو تبديل","Cases to approve":"حالات للموافقة","Fill an assessment":"تعبئة تقييم","24 duty":"مناوبة 24","Morning duty":"دوام صباحي","On leave":"إجازة","Nothing on the roster":"ما في دوام بالجدول","Signed in as":"مسجّل باسم","Patient initials":"أول حرفين من اسم المريض","Patient file number":"رقم ملف المريض","e.g. AS":"مثلاً ع ص","e.g. 123456":"مثلاً 123456","No patient ID":"ناقص بيانات المريض","Required. First letter of the patient's first name and of the family name, and the hospital file number.":"إجباري. أول حرف من اسم المريض وأول حرف من اسم العائلة، ورقم ملف المستشفى.","Can't approve: patient initials and file number are missing":"ما بتنفع الموافقة: ناقص حروف اسم المريض ورقم الملف","Write the patient's 2 initials and file number":"اكتب أول حرفين من اسم المريض ورقم ملفه","morning":"صباحي","All":"الكل","Attendance":"الحضور","Clinic":"العيادة","Emergency":"الطوارئ","General":"عام","Last":"آخر مرة","Presenter":"المحاضر","Resident":"المقيم","Setting":"المكان","To":"إلى","Type":"النوع","Reading":"قراءة","or":"أو","performed":"منفّذة","Other (type below)":"أخرى (اكتبها تحت)","Facts only: date, place, what happened":"حقائق فقط: التاريخ، المكان، شو صار","e.g. 2":"مثلاً 2","e.g. Dr. … (consultant)":"مثلاً د. … (استشاري)","Dr. …":"د. …","Cycle A (foundations)":"الدورة A (الأساسيات)","Cycle B (advanced)":"الدورة B (المتقدمة)","Done 0 ·":"معطاة 0 ·","trainer":"مدرّب"
 };
 const AR_RX=[
+ [/^New registrations \((\d+)\)$/,(m,a)=>`تسجيلات جديدة (${a})`],
+ [/^Thank you, (.*)$/,(m,a)=>`شكراً ${a}`],
+ [/^(.+): suspensions and exams$/,(m,a)=>`${a}: الإيقافات والامتحانات`],
  [/^Done (\d+) ·$/,(m,a)=>`معطاة ${a} ·`],
  [/^(.+) \(trainer\)$/,(m,a)=>`${a} (مدرّب)`],
  [/^(\d+) residents? · (\d+) lectures \((\d+) upcoming\) · (\d+) exams$/,(m,a,b,c,d)=>`${a} مقيم · ${b} محاضرة (${c} قادمة) · ${d} امتحان`],
@@ -1738,6 +1749,74 @@ function initLang(){
   trNode(document.body);
   new MutationObserver(ms=>ms.forEach(m=>{if(m.type==="characterData")trNode(m.target);else if(m.type==="attributes")trNode(m.target);else m.addedNodes.forEach(trNode)})).observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["placeholder","title"]});
 }
+/* ================= registration profile (new sign-ups) ================= */
+const MS=[["promo12","Promotion from R1 to R2"],["part1","First part"],["promo34","Promotion from R3 to R4"],["promo45","Promotion from R4 to R5"],["eligW","Eligibility written"],["eligO","Eligibility OSCE"],["part2W","2nd part written"],["part2O","2nd part OSCE"]];
+let CPROF=null;
+const PROFS=()=>CPROF||[];
+const msLevel=ms=>1+["promo12","part1","promo34","promo45"].filter(k=>ms&&ms[k]&&ms[k].ok).length;
+function profFields(d){d=d||{};const S=(d.susp&&d.susp.length?d.susp:[]),M=d.ms||{};
+  const srow=s=>`<div class="row pf-s" style="align-items:flex-end;margin-bottom:6px"><div style="flex:1;min-width:120px">${field("From",`<input class="f2 pf-sf" type="date" value="${esc(s.from||"")}">`)}</div><div style="flex:1;min-width:120px">${field("To",`<input class="f2 pf-st" type="date" value="${esc(s.to||"")}">`)}</div><div style="flex:2;min-width:140px">${field("Reason",`<input class="f2 pf-sr" value="${esc(s.reason||"")}">`)}</div><button type="button" class="btn sm d pf-sx" style="margin-bottom:12px">×</button></div>`;
+  return `<div class="panel">
+   ${field("Full name",inp("pf_name",d.name||""))}
+   <div class="row"><div style="flex:1;min-width:140px">${field("Mobile number",inp("pf_phone",d.phone||"",'type="tel" dir="ltr" placeholder="059…"'))}</div><div style="flex:1;min-width:140px">${field("Board start date",inp("pf_bs",d.boardStart||"",'type="date"'))}</div></div></div>
+  <h3>Suspension periods</h3><p class="note" style="margin-top:-6px">Any time the training was stopped. Leave empty if none.</p>
+  <div class="panel"><div id="pf_sl">${S.map(srow).join("")}</div><button type="button" class="btn sm" id="pf_sadd">+ Add a period</button></div>
+  <h3>Exams passed</h3><p class="note" style="margin-top:-6px">Tick each one you passed and write its date.</p>
+  <div class="panel">${MS.map(([k,n])=>{const v=M[k]||{};return `<div class="row" style="align-items:center;margin-bottom:6px"><label style="flex:2;min-width:170px;display:flex;gap:8px;align-items:center"><input type="checkbox" class="pf-mk" data-k="${k}" ${v.ok?"checked":""}> <span>${n}</span></label><input class="f2 pf-md" data-k="${k}" type="date" value="${esc(v.date||"")}" style="flex:1;min-width:130px"></div>`}).join("")}</div>`}
+function wireProf(){const add=()=>{$("#pf_sl").insertAdjacentHTML("beforeend",`<div class="row pf-s" style="align-items:flex-end;margin-bottom:6px"><div style="flex:1;min-width:120px">${field("From",'<input class="f2 pf-sf" type="date">')}</div><div style="flex:1;min-width:120px">${field("To",'<input class="f2 pf-st" type="date">')}</div><div style="flex:2;min-width:140px">${field("Reason",'<input class="f2 pf-sr">')}</div><button type="button" class="btn sm d pf-sx" style="margin-bottom:12px">×</button></div>`);x()};
+  const x=()=>$$(".pf-sx").forEach(b=>b.onclick=()=>b.closest(".pf-s").remove());x();$("#pf_sadd").onclick=add;
+  $$(".pf-md").forEach(i=>i.oninput=()=>{if(i.value){const c=document.querySelector(`.pf-mk[data-k="${i.dataset.k}"]`);if(c)c.checked=true}})}
+function readProf(){const ms={};MS.forEach(([k])=>{const c=document.querySelector(`.pf-mk[data-k="${k}"]`),d=document.querySelector(`.pf-md[data-k="${k}"]`);if(c&&(c.checked||d.value))ms[k]={ok:c.checked,date:d.value}});
+  const susp=$$(".pf-s").map(r=>({from:r.querySelector(".pf-sf").value,to:r.querySelector(".pf-st").value,reason:r.querySelector(".pf-sr").value.trim()})).filter(s=>s.from||s.to||s.reason);
+  return {name:$("#pf_name").value.trim(),phone:$("#pf_phone").value.trim(),boardStart:$("#pf_bs").value,susp,ms}}
+function profErr(v){if(v.name.length<5)return "Write your full name";if(!/^[0-9+\s-]{7,}$/.test(v.phone))return "Write a valid mobile number";if(!v.boardStart)return "Choose the board start date";
+  if(v.susp.some(s=>!s.from||!s.to||s.to<s.from))return "Check the suspension dates";if(MS.some(([k])=>v.ms[k]&&v.ms[k].ok&&!v.ms[k].date))return "Write the date of each exam you passed";return ""}
+function msView(p){const S=p.susp||[],M=p.ms||{};const done=MS.filter(([k])=>M[k]&&M[k].ok);
+  return `<h3>Suspension periods</h3><div class="panel">${S.length?S.map(s=>`<div class="kv"><span>${fdy(s.from)} – ${fdy(s.to)}</span><span>${esc(s.reason||"")}</span></div>`).join(""):'<p class="note">None.</p>'}</div>
+  <h3>Exams passed</h3><div class="panel">${done.length?done.map(([k,n])=>`<div class="kv"><span>${n}</span><span>${M[k].date?fdy(M[k].date):"—"}</span></div>`).join(""):'<p class="note">None recorded.</p>'}</div>`}
+/* sign-up side */
+async function profGate(){const {fs,db}=LIVE,ref=fs.doc(db,"profiles",LIVE.user.uid);let d=null;try{const s=await fs.getDoc(ref);d=s.exists()?s.data():null}catch(e){}
+  const so=()=>LIVE.au.signOut(LIVE.auth);
+  if(d&&d.status==="pending")return profWait(d);
+  if(d&&d.status==="rejected"){shell(`<h2>Registration not approved</h2><p>Please contact the program director.</p><div class="row"><button class="btn" id="so">Sign out</button></div>`);$("#so").onclick=so;return}
+  if(d&&d.status==="ok"){shell(`<h2>Your registration was approved</h2><p>Press Continue to open the program.</p><div class="row"><button class="btn p" id="ta">Continue</button><button class="btn" id="so">Sign out</button></div>`);$("#ta").onclick=resolveRole;$("#so").onclick=so;return}
+  profForm(null)}
+function profForm(d){const {fs,db}=LIVE;
+  shell(`<h2>Welcome to the program</h2><p class="lead">Before you start, fill in your details. The program director checks them and approves your account.</p>
+  <p class="note" dir="ltr">${esc(LIVE.user.email)}</p>${profFields(d)}
+  <div id="pf_m" class="note" style="min-height:1.3em;color:#B42318;margin-top:8px"></div>
+  <div class="row" style="margin-top:8px"><button class="btn p" id="pf_send">Send for approval</button><button class="btn" id="so">Sign out</button></div>`);
+  wireProf();$("#so").onclick=()=>LIVE.au.signOut(LIVE.auth);
+  $("#pf_send").onclick=async()=>{const v=readProf(),e=profErr(v);if(e){$("#pf_m").textContent=tr(e);return}
+    $("#pf_send").disabled=true;try{const doc=Object.assign({email:String(LIVE.user.email).toLowerCase(),status:"pending",at:new Date().toISOString()},v);await fs.setDoc(fs.doc(db,"profiles",LIVE.user.uid),doc);profWait(doc)}catch(err){$("#pf_send").disabled=false;$("#pf_m").textContent=tr("Could not send: ")+(err.code||err.message)}}}
+function profWait(d){shell(`<h2>Thank you, ${esc(d.name||"")}</h2><p>Your details were sent to the program director for review. You can open the program once they approve them.</p>
+  <div class="row"><button class="btn p" id="ta">Check again</button><button class="btn" id="pe">Edit my details</button><button class="btn" id="so">Sign out</button></div>`);
+  $("#ta").onclick=resolveRole;$("#pe").onclick=()=>profForm(d);$("#so").onclick=()=>LIVE.au.signOut(LIVE.auth)}
+/* admin side */
+function regPanel(){const P=PROFS().filter(x=>x.status==="pending");if(!P.length||VIEWER)return "";
+  return `<h3>New registrations (${P.length})</h3><div class="panel" style="border-color:var(--act)">${P.map(x=>`<div class="kv" data-reg="${x.id}" style="cursor:pointer"><span class="w"><b>${esc(x.name||"—")}</b><br><span class="note" dir="ltr">${esc(x.email||"")}</span></span><span><button class="btn sm mini p">Review</button></span></div>`).join("")}</div>`}
+function regSheet(id){const x=PROFS().find(p=>p.id===id);if(!x)return;const nm=(x.name||"").toLowerCase().replace(/^dr\.?\s*/,"");
+  const guess=ST.residents.find(r=>{const a=r.name.toLowerCase().split(/\s+/),b=nm.split(/\s+/);return a[0]&&b[0]&&a[0]===b[0]&&(a[1]||"")===(b[1]||"")})||null;
+  openSheet(`<h3>Review registration</h3><p class="note" dir="ltr" style="margin-top:-6px">${esc(x.email)} · ${x.at?fdy(x.at.slice(0,10)):""}</p>${profFields(x)}
+  <h3>Account</h3><div class="panel"><div class="row"><div style="flex:2;min-width:160px">${field("This person is",`<select class="f2" id="rg_r"><option value="">A new resident</option>${sortedRes().map(r=>opt(r.id,r.name+" (R"+r.level+")",guess&&guess.id===r.id)).join("")}</select>`)}</div><div style="flex:1;min-width:90px">${field("Year",`<select class="f2" id="rg_l">${[1,2,3,4,5,6].map(y=>opt(y,"R"+y,y===(guess?guess.level:msLevel(x.ms)))).join("")}</select>`)}</div></div>
+  <p class="note" style="margin:0">Approving adds this email to the program, links it to the resident, and saves these details in the resident's file.</p></div>
+  <div class="row" style="margin-top:12px"><button class="btn p" id="rg_ok">Approve</button><button class="btn" id="rg_save">Save changes</button><button class="btn d" id="rg_no">Reject</button><button class="btn" id="rg_x">Close</button></div>`);
+  wireProf();$("#rg_x").onclick=closeSheet;
+  const ref=LIVE.fs.doc(LIVE.db,"profiles",id),who=MYTR||(MYHASH&&(WHO()[MYHASH]||"").replace(/^t:/,""))||"Program director";
+  $("#rg_save").onclick=async()=>{const v=readProf();try{await LIVE.fs.updateDoc(ref,v);toast("Saved")}catch(e){toast("Could not save: "+(e.code||e.message))}};
+  $("#rg_no").onclick=async()=>{if(!confirm("Reject this registration?"))return;try{await LIVE.fs.updateDoc(ref,{status:"rejected",decidedBy:who});closeSheet()}catch(e){toast("Could not save: "+(e.code||e.message))}};
+  $("#rg_ok").onclick=async()=>{const v=readProf(),e=profErr(v);if(e){toast(e);return}
+    let r=resById($("#rg_r").value);const lvl=+$("#rg_l").value;
+    if(!r){r={id:uid(),name:v.name,level:lvl};ST.residents.push(r)}else{r.level=lvl}
+    const p=rpOf(r);Object.assign(p,{boardStart:v.boardStart,phone:v.phone,email:x.email,susp:v.susp,ms:v.ms});if(!p.since)p.since=today();
+    const h=await emailHash(x.email);WHO()[h]="r:"+r.id;HASHES[x.email]=h;save();
+    try{const L=LIVE.lists||{admins:[],viewers:[]};const vw=new Set(L.viewers||[]);vw.add(x.email);await LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"access","lists"),{admins:L.admins||[],viewers:[...vw]});
+      await LIVE.fs.updateDoc(ref,Object.assign({},v,{status:"ok",rid:r.id,decidedBy:who}));syncRes();toast("Approved");closeSheet();rerender()}catch(err){toast("Could not save: "+(err.code||err.message))}}}
+function msSheet(id){const r=resById(id);if(!r)return;const p=rpOf(r);
+  openSheet(`<h3>${esc(r.name)}: suspensions and exams</h3>${profFields({name:r.name,phone:p.phone,boardStart:p.boardStart,susp:p.susp,ms:p.ms})}<div class="row" style="margin-top:12px"><button class="btn p" id="ms_save">Save</button><button class="btn" id="ms_x">Cancel</button></div>`);
+  wireProf();$("#ms_x").onclick=()=>profile(id);
+  $("#ms_save").onclick=()=>{const v=readProf();r.name=v.name||r.name;Object.assign(p,{phone:v.phone,boardStart:v.boardStart,susp:v.susp,ms:v.ms});save();toast("Saved");profile(id);rerender()}}
+
 initLang();
 {const fb=$("#pinforgot");if(fb)fb.onclick=async()=>{
   if(!(typeof LIVE!=="undefined"&&LIVE&&LIVE.au)){toast("Ask the program director to reset this device");return}
@@ -1758,7 +1837,7 @@ function mySnap(){const rid=MYRID,r=resById(rid);if(!r)return null;const t=today
   return S}
 const NK=()=>"ent-nseen-"+MYRID;
 function myNotes(){
-  if(!VIEWER)return [...(pendN().reqs?[{tab:"reqs",txt:L2(pendN().reqs+" request(s) waiting for you",pendN().reqs+" طلب بانتظارك")}]:[]),...(pendN().log?[{tab:"log",txt:L2(pendN().log+" logbook case(s) waiting for approval",pendN().log+" حالة لوق بوك بانتظار الموافقة")}]:[])];
+  if(!VIEWER)return [...(pendN().reqs?[{tab:"reqs",txt:L2(pendN().reqs+" request(s) waiting for you",pendN().reqs+" طلب بانتظارك")}]:[]),...(pendN().log?[{tab:"log",txt:L2(pendN().log+" logbook case(s) waiting for approval",pendN().log+" حالة لوق بوك بانتظار الموافقة")}]:[]),...(pendN().people?[{tab:"people",txt:L2(pendN().people+" new registration(s) to review",pendN().people+" تسجيل جديد بانتظار المراجعة")}]:[])];
   if(MYTR){const n=pendN().log;return n?[{tab:"log",txt:L2(n+" case(s) waiting for your approval",n+" حالة بانتظار موافقتك")}]:[]}
   if(!MYRID)return [];
   const ready=!LIVE||(CCOND!==null&&CREQS!==null);const S=mySnap();if(!S)return [];

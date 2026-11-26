@@ -139,7 +139,7 @@ table.rep td.n{text-align:center}
 .gate{max-width:440px;margin:40px auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
 .gate h2{margin-top:0}
 .viewer-tag{display:inline-block;margin-left:8px;font-size:.75rem;background:rgba(255,255,255,.2);padding:1px 8px;border-radius:999px;vertical-align:3px}
-@media print{header.app nav,.noprint,.btn,.toast,.scrim,.lock{display:none!important}.kpis div{border-color:#bbb}table.rep{font-size:10.5pt}table.rep th{background:#eee}h2{break-after:avoid}.panel{break-inside:auto}header.app{background:none;color:#000}body{background:#fff}.panel{border-color:#bbb}main{padding:0}}
+@media print{.print-only{display:block!important}table.duty tr{break-inside:avoid}header.app nav,.noprint,.btn,.toast,.scrim,.lock{display:none!important}.kpis div{border-color:#bbb}table.rep{font-size:10.5pt}table.rep th{background:#eee}h2{break-after:avoid}.panel{break-inside:auto}header.app{background:none;color:#000}body{background:#fff}.panel{border-color:#bbb}main{padding:0}}
 </style>
 <style>
 .st-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:.8rem;font-weight:600;cursor:pointer}
@@ -169,7 +169,7 @@ select.f2,input.f2,textarea.f2{width:100%;padding:8px 10px;border:1px solid var(
 <body>
 <header class="app"><div class="in"><h1 id="pname">ENT Residency Program</h1><p id="psub"></p></div>
 <nav class="tabs" role="tablist">
- <button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
+ <button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
 </nav></header>
 <main id="view"></main>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
@@ -353,7 +353,7 @@ function old_applyEdits(out){
 }
 /* ================= state ================= */
 const KEY="ent-program-v1";
-const DEF={name:"ENT Residency Program",defTime:"12:00",yearStart:null,residents:[],lectures:[],exams:[],scores:{},att:{},rotTypes:[],rot:{},rp:{},graduates:[],theatre:{lists:[],weeks:{}},procs:null,frame:null,lecTypes:null,examTypes:null,pinHash:null,pinSalt:null,ownerEmail:""};
+const DEF={name:"ENT Residency Program",defTime:"12:00",yearStart:null,residents:[],lectures:[],exams:[],scores:{},att:{},rotTypes:[],rot:{},rp:{},graduates:[],theatre:{lists:[],weeks:{}},duty:{days:{}},procs:null,frame:null,lecTypes:null,examTypes:null,pinHash:null,pinSalt:null,ownerEmail:""};
 let VIEWER=false;
 let ST=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return Object.assign({},DEF)}})();
 function saveLocal(){if(VIEWER)return;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
@@ -449,7 +449,7 @@ function rotAt(r,date){const b=blocksOf(r.id).find(x=>x.from<=date&&date<=x.to);
 function rpOf(r){if(!ST.rp[r.id])ST.rp[r.id]={boardStart:"",since:"",phone:"",email:"",notes:"",hist:[]};return ST.rp[r.id]}
 
 /* ================= router ================= */
-const VIEWER_TABS=["week","lectures","exams"];
+const VIEWER_TABS=["week","lectures","exams","duty"];
 let TAB=location.hash.slice(1)||"week";
 function go(t){TAB=t;location.hash=t;render()}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
@@ -461,7 +461,7 @@ function render(){
   $("#psub").textContent=`${ST.residents.length} resident${ST.residents.length===1?"":"s"} · ${ST.lectures.length} lectures (${up} upcoming) · ${ST.exams.length} exams`;
   if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="week";
   $$("nav.tabs button").forEach(b=>{b.setAttribute("aria-selected",b.dataset.t===TAB);b.style.display=VIEWER&&!VIEWER_TABS.includes(b.dataset.t)?"none":""});
-  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,rot:vRot,people:vResidents,report:vReport,ops:vOps,frame:vFrame,settings:vSettings}[TAB]||vWeek;
+  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,rot:vRot,people:vResidents,report:vReport,ops:vOps,frame:vFrame,settings:vSettings}[TAB]||vWeek;
   const y=window.scrollY;$("#view").innerHTML=V();bind();if(render.keep){window.scrollTo(0,y);render.keep=false}else window.scrollTo(0,0);
 }
 function rerender(){render.keep=true;render()}
@@ -718,6 +718,74 @@ function assignSheet(lid){const T=TH();const l=T.lists.find(x=>x.id===lid);const
 }
 function theatreCount(id,a,b){const T=TH();let n=0;Object.entries(T.weeks).forEach(([wk,W])=>{T.lists.forEach(l=>{const d=addD(wk,+l.day);if(d>=a&&d<=b&&(W[l.id]||[]).includes(id))n++})});return n}
 
+/* ================= duty roster (monthly) ================= */
+let DMO=null;
+const MONL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function DU(){if(!ST.duty||typeof ST.duty!=="object")ST.duty={days:{}};if(!ST.duty.days||typeof ST.duty.days!=="object")ST.duty.days={};return ST.duty}
+const moDays=m=>{const [y,mo]=m.split("-").map(Number);const n=new Date(y,mo,0).getDate();return Array.from({length:n},(_,i)=>m+"-"+pad(i+1))};
+const moName=m=>{const [y,mo]=m.split("-").map(Number);return MONL[mo-1]+" "+y};
+const addMo=(m,k)=>{const [y,mo]=m.split("-").map(Number);const d=new Date(y,mo-1+k,1);return d.getFullYear()+"-"+pad(d.getMonth()+1)};
+const dutyOf=d=>{const x=DU().days[d]||{};return {am:x.am||[],oc:x.oc||[],sp:x.sp||""}};
+const dutyNames=ids=>(ids||[]).map(resById).filter(Boolean);
+const dShort=d=>{const x=dt(d);return DAY[x.getDay()].slice(0,3)+" "+x.getDate()};
+const isFri=d=>dt(d).getDay()===5;
+function dutyIssues(m){
+  const out={},add=(d,t)=>(out[d]=out[d]||[]).push(t);
+  moDays(m).forEach(d=>{const x=dutyOf(d),oc=dutyNames(x.oc),prev=dutyOf(addD(d,-1)).oc;
+    if(oc.length&&!oc.some(r=>r.level>=3))add(d,"No R3 or above on call");
+    oc.forEach(r=>{if(prev.includes(r.id))add(d,r.name+" is on call two days in a row")})});
+  return out;
+}
+function dutyCounts(m){const c={};const z=id=>c[id]=c[id]||{am:0,oc:0,fri:0};
+  moDays(m).forEach(d=>{const x=dutyOf(d);x.am.forEach(id=>z(id).am++);x.oc.forEach(id=>{z(id).oc++;if(isFri(d))z(id).fri++})});return c}
+const dutyTags=ids=>dutyNames(ids).map(r=>`<span class="tag" style="margin:0 4px 3px 0">${esc(r.name)} R${r.level}</span>`).join("")||'<span class="note">—</span>';
+function vDuty(){
+  if(!DMO)DMO=today().slice(0,7);
+  const days=moDays(DMO),iss=dutyIssues(DMO),t=today(),nIss=Object.values(iss).reduce((a,b)=>a+b.length,0);
+  let h=`<h2>Duty roster</h2><div class="row noprint" style="margin-bottom:12px"><button class="btn" id="dprev">‹</button><b style="flex:1;text-align:center">${moName(DMO)}</b><button class="btn" id="dnext">›</button></div>
+  <div class="row noprint" style="margin-bottom:12px"><button class="btn sm" id="dnow">This month</button>${VIEWER?"":`<button class="btn sm" id="drep">Repeat first week</button><button class="btn sm" id="dclear">Clear month</button>`}<button class="btn sm" id="dshare">Share month</button><button class="btn sm" id="dprint">Print</button><button class="btn sm" id="dcsv">Excel</button></div>
+  <p class="note print-only" style="display:none">${esc(ST.name)} · Duty roster ${moName(DMO)}</p>`;
+  if(!ST.residents.length)return h+`<div class="empty">Add residents on the Residents tab first.</div>`;
+  if(!VIEWER)h+=`<p class="note noprint" style="margin-top:0">Tap a day to choose the morning and 24-hour on-call residents. Fill the first week, then press Repeat first week to fill the rest of the month by weekday.</p>`;
+  if(nIss)h+=`<div class="panel" style="border-color:var(--warn);margin-bottom:12px"><b style="color:var(--warn)">${nIss} thing${nIss===1?"":"s"} to check</b>${Object.entries(iss).map(([d,a])=>a.map(x=>`<div class="note" style="margin-top:4px">${dShort(d)}: ${esc(x)}</div>`).join("")).join("")}</div>`;
+  h+=`<div class="panel" style="padding:4px 8px;overflow-x:auto"><table class="rep duty"><thead><tr><th style="width:64px">Day</th><th>Morning</th><th>On call 24h</th></tr></thead><tbody>`+days.map(d=>{const x=dutyOf(d);
+    const bg=d===t?"background:var(--act-soft)":isFri(d)?"background:var(--bg)":"";
+    return `<tr ${VIEWER?"":`data-dd="${d}" style="cursor:pointer;${bg}"`} ${VIEWER?`style="${bg}"`:""}><td><b>${dShort(d)}</b>${iss[d]?` <span style="color:var(--warn)" title="${esc(iss[d].join("; "))}">⚠</span>`:""}</td><td>${dutyTags(x.am)}</td><td>${dutyTags(x.oc)}${x.sp?`<div class="note">Specialist: ${esc(x.sp)}</div>`:""}</td></tr>`}).join("")+`</tbody></table></div>`;
+  const c=dutyCounts(DMO);
+  h+=`<h3>Totals this month</h3><div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Resident</th><th>Morning</th><th>On call</th><th>Fridays on call</th></tr></thead><tbody>${sortedRes().map(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};return `<tr><td>${esc(r.name)} R${r.level}</td><td>${k.am}</td><td>${k.oc}</td><td>${k.fri}</td></tr>`}).join("")}</tbody></table></div>`;
+  return h;
+}
+function dutySheet(d){const x=dutyOf(d),prev=dutyOf(addD(d,-1)).oc,next=dutyOf(addD(d,1)).oc;
+  const col=(key,sel,hint)=>`<div class="panel attl" style="margin-top:6px">${sortedRes().map(r=>{const h=hint(r);return `<label><input type="checkbox" data-${key}="${r.id}" ${sel.includes(r.id)?"checked":""}> ${esc(r.name)} <span class="note">R${r.level}${h?" · "+h:""}</span></label>`}).join("")}</div>`;
+  openSheet(`<h3>${fdw(d)}</h3><h3 style="margin-top:14px">Morning</h3>${col("dam",x.am,r=>{const m=rotAt(r,d);return m?esc(m.n):""})}
+  <h3 style="margin-top:14px">On call 24h</h3>${col("doc",x.oc,r=>prev.includes(r.id)?'<span style="color:var(--warn)">on call the day before</span>':next.includes(r.id)?'<span style="color:var(--warn)">on call the day after</span>':"")}
+  ${field("Specialist on call (optional)",inp("d_sp",x.sp,'placeholder="Dr. …"'))}
+  <div class="row" style="margin-top:12px"><button class="btn p" id="d_save">Save</button><button class="btn" id="d_clr">Clear day</button><button class="btn" id="d_cancel">Cancel</button></div>`);
+  const D=DU();
+  $("#d_cancel").onclick=closeSheet;
+  $("#d_clr").onclick=()=>{delete D.days[d];save();closeSheet();rerender()};
+  $("#d_save").onclick=()=>{const g=k=>[...document.querySelectorAll(`[data-${k}]`)].filter(c=>c.checked).map(c=>c.getAttribute("data-"+k));
+    const v={am:g("dam"),oc:g("doc"),sp:$("#d_sp").value.trim()};if(!v.am.length&&!v.oc.length&&!v.sp)delete D.days[d];else D.days[d]=v;save();closeSheet();rerender()};
+}
+function dutyText(){let txt=`${ST.name}\nDuty roster: ${moName(DMO)}\n`;
+  moDays(DMO).forEach(d=>{const x=dutyOf(d);if(!x.am.length&&!x.oc.length)return;txt+=`\n${fdw(d)}\n`;
+    if(x.am.length)txt+=`  Morning: ${dutyNames(x.am).map(r=>r.name).join(", ")}\n`;
+    if(x.oc.length||x.sp)txt+=`  On call 24h: ${dutyNames(x.oc).map(r=>r.name).join(", ")||"—"}${x.sp?" (Specialist: "+x.sp+")":""}\n`});return txt}
+function bindDuty(){
+  const on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};
+  on("#dprev",()=>{DMO=addMo(DMO,-1);rerender()});on("#dnext",()=>{DMO=addMo(DMO,1);rerender()});on("#dnow",()=>{DMO=today().slice(0,7);rerender()});
+  $("#view").querySelectorAll("[data-dd]").forEach(r=>r.onclick=()=>dutySheet(r.dataset.dd));
+  on("#drep",()=>{const D=DU(),days=moDays(DMO),first=days.slice(0,7);if(!first.some(d=>D.days[d])){toast("Fill the first week first");return}
+    if(days.slice(7).some(d=>D.days[d])&&!confirm("Replace days 8 to "+days.length+" with the first week's pattern?"))return;
+    days.slice(7).forEach((d,i)=>{const s=D.days[first[i%7]];if(s)D.days[d]=JSON.parse(JSON.stringify(s));else delete D.days[d]});save();toast("Month filled");rerender()});
+  on("#dclear",()=>{if(!confirm("Clear the whole of "+moName(DMO)+"?"))return;const D=DU();moDays(DMO).forEach(d=>delete D.days[d]);save();rerender()});
+  on("#dshare",()=>shareText(dutyText()));
+  on("#dprint",()=>window.print());
+  on("#dcsv",()=>{const rows=[["Date","Day","Morning","On call 24h","Specialist on call"]].concat(moDays(DMO).map(d=>{const x=dutyOf(d);return [d,DAY[dt(d).getDay()],dutyNames(x.am).map(r=>r.name).join(", "),dutyNames(x.oc).map(r=>r.name).join(", "),x.sp]}));
+    const c=dutyCounts(DMO);rows.push([],["Resident","Year","Morning","On call","Fridays on call"]);sortedRes().forEach(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};rows.push([r.name,"R"+r.level,k.am,k.oc,k.fri])});
+    download(new Blob([csv(rows)],{type:"text/csv"}),"duty-roster-"+DMO+".csv")});
+}
+
 /* ================= operative levels (editable) ================= */
 let OPSY=0;
 function vOps(){
@@ -861,6 +929,7 @@ function bind(){
   on("#delall",()=>{if(!confirm("Delete ALL lectures and their attendance? Exams are kept."))return;if(!confirm("Are you sure? This cannot be undone unless you have a backup."))return;ST.lectures=[];ST.att={};save();render()});
   on("#bexp",()=>{const d=JSON.parse(JSON.stringify(ST));delete d.pinHash;delete d.pinSalt;download(new Blob([JSON.stringify(d,null,1)],{type:"application/json"}),"ent-program-backup-"+today()+".json")});
   const bi=$("#bimp");if(bi)bi.onchange=async()=>{const f=bi.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!confirm("Replace everything with this backup?"))return;const keep={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};ST=Object.assign({},DEF,d,keep);migrate();seedTables();save();toast("Imported");render()}catch(e){toast("That file could not be read")}};
+  bindDuty();
   bindAccess();
 }
 
@@ -886,7 +955,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 const FBV="10.12.2",FB="https://www.gstatic.com/firebasejs/"+FBV+"/";
 let LIVE=null; // {auth,db,fs,user,role,unsub:[]}
 let CFG=null,pendingRender=false,writeT=null,lastWrite=0;
-const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime"];
+const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime","duty"];
 const PRIVATE_KEYS=["scores","att","rotTypes","rot","rp","graduates","theatre","procs","frame","lecTypes","examTypes","yearStart"];
 function pick(o,keys){const r={};keys.forEach(k=>{if(o[k]!==undefined)r[k]=o[k]});return r}
 function isEditing(){const a=document.activeElement;return $("#scrim").classList.contains("open")||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))}

@@ -159,6 +159,9 @@ table.tl th{font-weight:600;color:var(--muted);text-align:center;padding:4px}
 table.tl th.n{text-align:left;color:var(--ink);white-space:nowrap;cursor:pointer}
 table.tl td{border-radius:5px;text-align:center;padding:6px 4px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
 table.tl td.e{background:var(--bg)}
+.wdc{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 8px}.wdc label{display:inline-flex;position:relative}.wdc input{position:absolute;opacity:0;width:1px;height:1px}.wdc span{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.82rem;color:var(--muted);cursor:pointer;background:var(--surface)}.wdc input:checked+span{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}.wdc input:focus-visible+span{outline:2px solid var(--act)}
+.bar{height:4px;background:var(--line);border-radius:2px;margin-top:3px;min-width:60px}.bar i{display:block;height:100%;background:#1F7A4D;border-radius:2px}
+table.log td.n{text-align:center}
 .pass{color:#1F7A4D;font-weight:700}.fail{color:#B42318;font-weight:700}
 .frame-body{white-space:pre-wrap;font-size:.92rem}
 .sec-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -169,7 +172,7 @@ select.f2,input.f2,textarea.f2{width:100%;padding:8px 10px;border:1px solid var(
 <body>
 <header class="app"><div class="in"><h1 id="pname">ENT Residency Program</h1><p id="psub"></p></div>
 <nav class="tabs" role="tablist">
- <button data-t="mine">My schedule</button><button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
+ <button data-t="mine">My schedule</button><button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="log">Logbook</button><button data-t="assess">Assessments</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
 </nav></header>
 <main id="view"></main>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
@@ -353,7 +356,7 @@ function old_applyEdits(out){
 }
 /* ================= state ================= */
 const KEY="ent-program-v1";
-const DEF={name:"ENT Residency Program",defTime:"12:00",yearStart:null,residents:[],lectures:[],exams:[],scores:{},att:{},rotTypes:[],rot:{},rp:{},graduates:[],theatre:{lists:[],weeks:{}},duty:{days:{}},who:{},trainers:[],procs:null,frame:null,lecTypes:null,examTypes:null,pinHash:null,pinSalt:null,ownerEmail:""};
+const DEF={name:"ENT Residency Program",defTime:"12:00",yearStart:null,residents:[],lectures:[],exams:[],scores:{},att:{},rotTypes:[],rot:{},rp:{},graduates:[],theatre:{lists:[],weeks:{}},duty:{days:{}},who:{},trainers:[],logbook:[],evals:[],procs:null,frame:null,lecTypes:null,examTypes:null,pinHash:null,pinSalt:null,ownerEmail:""};
 let VIEWER=false;
 let ST=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return Object.assign({},DEF)}})();
 function saveLocal(){if(VIEWER)return;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
@@ -420,7 +423,7 @@ function seedTables(){
     {id:uid(),title:"Logbook",body:"Every case is logged the same day with the resident's role: observed, assisted, performed under supervision or independent. The supervising consultant signs the logbook monthly."}]}
   if(!ST.lecTypes)ST.lecTypes=DEF_LECTYPES.slice();
   if(!ST.examTypes)ST.examTypes=DEF_EXAMTYPES.slice();
-  ["lectures","exams","rotTypes","graduates"].forEach(k=>{if(!Array.isArray(ST[k]))ST[k]=[]});
+  ["lectures","exams","rotTypes","graduates","logbook","evals"].forEach(k=>{if(!Array.isArray(ST[k]))ST[k]=[]});
   ["scores","att","rot","rp"].forEach(k=>{if(!ST[k]||typeof ST[k]!=="object")ST[k]={}});
   if(!ST.theatre)ST.theatre={lists:[],weeks:{}};
   if(!ST.yearStart){const d=new Date();ST.yearStart=iso(new Date(d.getMonth()>=8?d.getFullYear():d.getFullYear()-1,8,1))}
@@ -461,7 +464,7 @@ function render(){
   $("#psub").textContent=`${ST.residents.length} resident${ST.residents.length===1?"":"s"} · ${ST.lectures.length} lectures (${up} upcoming) · ${ST.exams.length} exams`;
   if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="week";
   $$("nav.tabs button").forEach(b=>{b.setAttribute("aria-selected",b.dataset.t===TAB);b.style.display=VIEWER&&!VIEWER_TABS.includes(b.dataset.t)?"none":""});
-  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,frame:vFrame,settings:vSettings}[TAB]||vWeek;
+  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,log:vLog,assess:vEval,frame:vFrame,settings:vSettings}[TAB]||vWeek;
   const y=window.scrollY;$("#view").innerHTML=V();bind();if(render.keep){window.scrollTo(0,y);render.keep=false}else window.scrollTo(0,0);
 }
 function rerender(){render.keep=true;render()}
@@ -476,7 +479,7 @@ function vWeek(){
   const later=L.filter(l=>l.date>(next?next.date:t));const dates=[...new Set(later.map(l=>l.date))].slice(0,4);
   const ex=examSorted().filter(e=>e.date>=t).slice(0,3);
   h+=`<div class="grid2" style="margin-top:18px"><div class="panel"><h3 style="margin-top:0">Coming up</h3>${dates.length?dates.map(d=>`<div class="kv"><span>${fd(d)}</span><span>${later.filter(l=>l.date===d).map(l=>esc(l.title)).join("<br>")}</span></div>`).join(""):'<p class="note">Nothing else scheduled.</p>'}</div>
-  <div class="panel"><h3 style="margin-top:0">Upcoming exams</h3>${ex.length?ex.map(e=>`<div class="kv"><span>${fd(e.date)}</span><span><b>${esc(e.name)}</b>${e.topics?`<br><span class="note">${esc(e.topics.split("\n").slice(0,3).join(", "))}</span>`:""}</span></div>`).join(""):'<p class="note">No exams scheduled.</p>'}</div></div>`;
+  <div class="panel"><h3 style="margin-top:0">Upcoming exams</h3>${ex.length?ex.map(e=>`<div class="kv"><span>${fd(e.date)}</span><span><b>${esc(e.name)}</b>${exYrTag(e)}${e.topics?`<br><span class="note">${esc(e.topics.split("\n").slice(0,3).join(", "))}</span>`:""}</span></div>`).join(""):'<p class="note">No exams scheduled.</p>'}</div></div>`;
   if(VIEWER)return h+`<p class="note noprint" style="margin-top:16px">${LIVE&&LIVE.user?"Signed in as "+esc(LIVE.user.email)+". ":""}<button class="btn sm" id="signout">Sign out</button></p>`;
   h+=`<h3>Where residents are now</h3><div class="panel">${ST.residents.length?sortedRes().map(r=>{const m=rotAt(r,t);return `<div class="kv"><span>${esc(r.name)} <span class="note">R${r.level}</span></span><span>${m?`<span class="sw" style="background:${m.c}"></span>${esc(m.n)}`:'<span class="note">No rotation set</span>'}</span></div>`}).join(""):'<p class="note">Add residents in the Residents tab.</p>'}</div>`;
   return h;
@@ -553,40 +556,41 @@ function vExams(){
   let h=`<h2>Exams</h2><div class="row noprint" style="margin-bottom:12px">${VIEWER?"":'<button class="btn p" id="addex">+ Add exam</button>'}<button class="btn" id="excsv">Excel</button><button class="btn" onclick="window.print()">Print</button></div>`;
   if(!E.length)return h+`<div class="empty">No exams yet.</div>`;
   const up=E.filter(e=>e.date>=t),pastE=E.filter(e=>e.date<t);
-  const card=e=>{const s=examStats(e);return `<div class="lrow"><div class="tm">${fd(e.date)}<div class="note" style="font-weight:400">${esc(e.time||"")}</div></div><div><div class="tt">${esc(e.name)} ${e.type?`<span class="tag">${esc(e.type)}</span>`:""}</div>
+  const card=e=>{const s=examStats(e);return `<div class="lrow"><div class="tm">${fd(e.date)}<div class="note" style="font-weight:400">${esc(e.time||"")}</div></div><div><div class="tt">${esc(e.name)} ${e.type?`<span class="tag">${esc(e.type)}</span>`:""}${exYrTag(e)}</div>
    ${e.topics?`<div class="meta" style="white-space:pre-wrap">${esc(e.topics)}</div>`:""}${e.place?`<div class="meta">📍 ${esc(e.place)}</div>`:""}${e.notes?`<div class="meta">📝 ${esc(e.notes)}</div>`:""}
-   ${VIEWER?"":`<div class="meta">${s.n?`Results: ${s.n}/${ST.residents.length} entered · average ${s.avg}% · passed ${s.passN}/${s.n}`:"No results entered"}</div><div class="acts noprint"><button class="btn sm mini" data-res="${e.id}">Results</button><button class="btn sm mini" data-edx="${e.id}">Edit</button></div>`}</div></div>`};
+   ${VIEWER?"":`<div class="meta">${s.n?`Results: ${s.n}/${ST.residents.filter(r=>examFor(e,r)).length} entered · average ${s.avg}% · passed ${s.passN}/${s.n}`:"No results entered"}</div><div class="acts noprint"><button class="btn sm mini" data-res="${e.id}">Results</button><button class="btn sm mini" data-edx="${e.id}">Edit</button></div>`}</div></div>`};
   if(up.length)h+=`<h3>Upcoming</h3><div class="panel">${up.map(card).join("")}</div>`;
   if(pastE.length)h+=`<h3>Past</h3><div class="panel">${pastE.slice().reverse().map(card).join("")}</div>`;
   if(!VIEWER&&E.length&&ST.residents.length){
     h+=`<h3>Results by resident</h3><div class="panel rep-wrap"><table class="rep"><thead><tr><th>Resident</th>${E.map(e=>`<th class="n">${fd(e.date)}<br>${esc(e.name)}</th>`).join("")}<th class="n">Average</th></tr></thead><tbody>${sortedRes().map(r=>{const vals=[];
-      const cells=E.map(e=>{const v=(ST.scores[e.id]||{})[r.id];if(v===undefined||v===""||v===null)return '<td class="n">—</td>';const pct=Math.round(v/(+e.max||100)*100);vals.push(pct);return `<td class="n ${v>=(+e.pass||0)?"pass":"fail"}">${v}</td>`}).join("");
-      return `<tr><td>${esc(r.name)} <span class="note">R${r.level}</span></td>${cells}<td class="n"><b>${vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length)+"%":"—"}</b></td></tr>`}).join("")}</tbody></table><p class="note" style="margin:8px 0 0">Green: at or above the pass mark. Red: below it.</p></div>`}
+      const cells=E.map(e=>{const v=(ST.scores[e.id]||{})[r.id];if(!examFor(e,r))return '<td class="n note">·</td>';if(v===undefined||v===""||v===null)return '<td class="n">—</td>';const pct=Math.round(v/(+e.max||100)*100);vals.push(pct);return `<td class="n ${v>=(+e.pass||0)?"pass":"fail"}">${v}</td>`}).join("");
+      return `<tr><td>${esc(r.name)} <span class="note">R${r.level}</span></td>${cells}<td class="n"><b>${vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length)+"%":"—"}</b></td></tr>`}).join("")}</tbody></table><p class="note" style="margin:8px 0 0">Green: at or above the pass mark. Red: below it. A dot means the exam was not for that year.</p></div>`}
   return h;
 }
 function examSheet(id){
-  const e=id?ST.exams.find(x=>x.id===id):{id:"",name:"",type:"Quiz",date:today(),time:ST.defTime,place:"",topics:"",max:100,pass:50,notes:""};if(!e)return;
+  const e=id?ST.exams.find(x=>x.id===id):{id:"",name:"",type:"Quiz",date:today(),time:ST.defTime,place:"",topics:"",max:100,pass:50,notes:"",years:[]};if(!e)return;const yrs=exYears(e)||[];
   openSheet(`<h3>${id?"Edit exam":"Add exam"}</h3>
   ${field("Exam name",inp("x_name",e.name,'placeholder="e.g. Otology quiz"'))}
   <div class="row"><div style="flex:1;min-width:140px">${field("Type",inp("x_type",e.type,'list="dl_et"')+dlist("dl_et",ST.examTypes))}</div><div style="flex:1;min-width:140px">${field("Place",inp("x_place",e.place))}</div></div>
   <div class="row"><div style="flex:1;min-width:140px">${field("Date",inp("x_date",e.date,'type="date"'))}</div><div style="flex:1;min-width:110px">${field("Time",inp("x_time",e.time,'type="time"'))}</div></div>
+  <div class="f"><span>For which years? Leave all unticked for everyone.</span><span class="wdc">${[1,2,3,4,5,6].map(y=>`<label><input type="checkbox" data-xy="${y}" ${yrs.includes(y)?"checked":""}><span>R${y}</span></label>`).join("")}</span></div>
   ${field("Topics (one per line)",`<textarea class="f2" id="x_topics" rows="4">${esc(e.topics)}</textarea>`)}
   <div class="row"><div style="flex:1">${field("Full mark",inp("x_max",e.max,'type="number" min="1"'))}</div><div style="flex:1">${field("Pass mark",inp("x_pass",e.pass,'type="number" min="0"'))}</div></div>
   ${field("Notes",inp("x_notes",e.notes))}
   <div class="row"><button class="btn p" id="x_save">Save</button><button class="btn" id="x_cancel">Cancel</button>${id?'<button class="btn d" id="x_del">Delete</button>':""}</div>`);
   $("#x_cancel").onclick=closeSheet;
-  $("#x_save").onclick=()=>{const v={name:$("#x_name").value.trim(),type:$("#x_type").value.trim(),place:$("#x_place").value.trim(),date:$("#x_date").value,time:$("#x_time").value,topics:$("#x_topics").value.trim(),max:+$("#x_max").value||100,pass:+$("#x_pass").value||0,notes:$("#x_notes").value.trim()};
+  $("#x_save").onclick=()=>{const v={name:$("#x_name").value.trim(),type:$("#x_type").value.trim(),place:$("#x_place").value.trim(),date:$("#x_date").value,time:$("#x_time").value,topics:$("#x_topics").value.trim(),max:+$("#x_max").value||100,pass:+$("#x_pass").value||0,notes:$("#x_notes").value.trim(),years:$$("[data-xy]").filter(c=>c.checked).map(c=>+c.dataset.xy)};
     if(!v.name||!v.date){toast("Add a name and date");return}if(v.type&&!ST.examTypes.includes(v.type))ST.examTypes.push(v.type);
     if(id)Object.assign(e,v);else ST.exams.push(Object.assign({id:uid()},v));save();closeSheet();toast("Saved");rerender()};
   if(id)$("#x_del").onclick=()=>{if(!confirm("Delete this exam and its results?"))return;ST.exams=ST.exams.filter(x=>x.id!==id);delete ST.scores[id];save();closeSheet();rerender()};
 }
 function resultsSheet(id){const e=ST.exams.find(x=>x.id===id);const S=ST.scores[id]||{};const max=+e.max||100;
-  openSheet(`<h3>Results</h3><div class="note">${esc(e.name)} · ${fdw(e.date)} · full mark ${max}, pass ${e.pass}</div>
-  <div class="panel attl" style="margin-top:10px">${sortedRes().map(r=>`<label>${esc(r.name)} <span class="note">R${r.level}</span><input type="number" min="0" max="${max}" step="any" data-sc="${r.id}" value="${S[r.id]??""}" placeholder="—"></label>`).join("")||'<p class="note">Add residents first.</p>'}</div>
+  openSheet(`<h3>Results</h3><div class="note">${esc(e.name)} ${exYrTag(e)} · ${fdw(e.date)} · full mark ${max}, pass ${e.pass}</div>
+  <div class="panel attl" style="margin-top:10px">${sortedRes().filter(r=>examFor(e,r)).map(r=>`<label>${esc(r.name)} <span class="note">R${r.level}</span><input type="number" min="0" max="${max}" step="any" data-sc="${r.id}" value="${S[r.id]??""}" placeholder="—"></label>`).join("")||'<p class="note">Add residents first.</p>'}</div>
   <p class="note">Leave empty for residents who did not sit the exam.</p>
   <div class="row"><button class="btn p" id="r_save">Save</button><button class="btn" id="r_cancel">Cancel</button></div>`);
   $("#r_cancel").onclick=closeSheet;
-  $("#r_save").onclick=()=>{const o={};$$("[data-sc]").forEach(i=>{if(i.value!=="")o[i.dataset.sc]=Math.max(0,Math.min(max,+i.value))});if(Object.keys(o).length)ST.scores[id]=o;else delete ST.scores[id];save();closeSheet();toast("Saved");rerender()};
+  $("#r_save").onclick=()=>{const o={};Object.entries(S).forEach(([k,v])=>{if(!document.querySelector(`[data-sc="${k}"]`))o[k]=v});$$("[data-sc]").forEach(i=>{if(i.value!=="")o[i.dataset.sc]=Math.max(0,Math.min(max,+i.value))});if(Object.keys(o).length)ST.scores[id]=o;else delete ST.scores[id];save();closeSheet();toast("Saved");rerender()};
 }
 
 /* ================= rotations ================= */
@@ -673,6 +677,7 @@ function profile(id){
   <div class="panel">${B.length?B.map(b=>`<div class="kv"><span><span class="sw" style="background:${blkColor(b)}"></span>${esc(blkName(b))}${b.from<=t&&t<=b.to?' <span class="tag">Now</span>':""}${b.notes?`<br><span class="note">${esc(b.notes)}</span>`:""}</span><span>${fd(b.from)} – ${fdy(b.to)} <button class="btn sm mini" data-erot="${b.id}">Edit</button></span></div>`).join(""):'<p class="note">No rotations yet.</p>'}</div>
   <h3>Lectures presented</h3><div class="panel">${pres.length?pres.map(l=>`<div class="kv"><span>${fd(l.date)}</span><span>${esc(l.title)} <span class="note">${esc(l.type||"")}</span>${stBadge(l.status)}</span></div>`).join(""):'<p class="note">None assigned.</p>'}</div>
   <h3>Exam results</h3><div class="panel">${ex.length?ex.map(e=>{const v=ST.scores[e.id][id];return `<div class="kv"><span>${fd(e.date)} ${esc(e.name)}</span><span class="${v>=(+e.pass||0)?"pass":"fail"}">${v}/${e.max} (${Math.round(v/(+e.max||100)*100)}%)</span></div>`}).join(""):'<p class="note">No results yet.</p>'}</div>
+  <h3>Logbook and assessments</h3><div class="panel note">${(()=>{const L=LOGB().filter(x=>x.rid===id),n=L.reduce((a,x)=>a+(+x.n||1),0),pf=L.filter(x=>+x.role>=3).reduce((a,x)=>a+(+x.n||1),0),E=EVS().filter(x=>x.rid===id);return `${n} cases logged, ${pf} performed · ${E.filter(x=>x.type==="Mini-CEX").length} Mini-CEX · ${E.filter(x=>x.type==="DOPS").length} DOPS`})()}</div>
   <h3>Attendance</h3><div class="panel note">${att.length?`Attended ${attN} of ${att.length} recorded lectures (${Math.round(attN/att.length*100)}%).`:"No attendance recorded yet."}</div>
   ${(p.hist||[]).length?`<h3>Previous years</h3><div class="panel">${p.hist.slice().reverse().map(x=>`<div class="kv"><span>R${x.level}</span><span>${fdy(x.from)} – ${fdy(x.to)}</span></div>`).join("")}</div>`:""}
   <div class="row" style="margin-top:14px"><button class="btn" id="p_promote">Move to R${r.level+1}</button><button class="btn" id="p_grad">Graduate</button><button class="btn d" id="p_del">Remove</button></div>`);
@@ -733,6 +738,7 @@ function dutyIssues(m){
   const out={},add=(d,t)=>(out[d]=out[d]||[]).push(t);
   moDays(m).forEach(d=>{const x=dutyOf(d),oc=dutyNames(x.oc),prev=dutyOf(addD(d,-1)).oc;
     if(oc.length&&!oc.some(r=>r.level>=3))add(d,"No R3 or above on 24");
+    if(!x.oc.length&&moDays(m).some(y=>dutyOf(y).oc.length))add(d,"Nobody on 24");
     oc.forEach(r=>{if(prev.includes(r.id))add(d,r.name+" is on 24 two days in a row")})});
   return out;
 }
@@ -744,7 +750,7 @@ function vDuty(){
   if(!DMO)DMO=today().slice(0,7);
   const days=moDays(DMO),iss=dutyIssues(DMO),t=today(),nIss=Object.values(iss).reduce((a,b)=>a+b.length,0);
   let h=`<h2>Duty roster</h2><div class="row noprint" style="margin-bottom:12px"><button class="btn" id="dprev">‹</button><b style="flex:1;text-align:center">${moName(DMO)}</b><button class="btn" id="dnext">›</button></div>
-  <div class="row noprint" style="margin-bottom:12px"><button class="btn sm" id="dnow">This month</button>${VIEWER?"":`<button class="btn sm" id="drep">Repeat first week</button><button class="btn sm" id="dclear">Clear month</button>`}<button class="btn sm" id="dshare">Share month</button><button class="btn sm" id="dprint">Print</button><button class="btn sm" id="dcsv">Excel</button></div>
+  <div class="row noprint" style="margin-bottom:12px"><button class="btn sm" id="dnow">This month</button>${VIEWER?"":`<button class="btn sm p" id="drules">Generate from rules</button><button class="btn sm" id="drep">Repeat first week</button><button class="btn sm" id="dclear">Clear month</button>`}<button class="btn sm" id="dshare">Share month</button><button class="btn sm" id="dprint">Print</button><button class="btn sm" id="dcsv">Excel</button></div>
   <p class="note print-only" style="display:none">${esc(ST.name)} · Duty roster ${moName(DMO)}</p>`;
   if(!ST.residents.length)return h+`<div class="empty">Add residents on the Residents tab first.</div>`;
   if(!VIEWER)h+=`<p class="note noprint" style="margin-top:0">Tap a day to choose the morning and 24 residents. 24 includes the morning. Hours: 24 = 24 hours, morning = 6 hours. Fill the first week, then press Repeat first week to fill the rest of the month by weekday.</p>`;
@@ -809,11 +815,12 @@ function vMine(){
     else if(x.sp&&x.sp.trim().toLowerCase()===id.trim().toLowerCase()){what="24 (specialist)";n24++}
     if(what)rows.push([d,what])});
   h+=`<div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Day</th><th>Duty</th></tr></thead><tbody>${rows.map(([d,w])=>`<tr style="${d===t?"background:var(--act-soft)":""}"><td><b>${dShort(d)}</b></td><td>${w.startsWith("24")?`<b>${w}</b>`:w}</td></tr>`).join("")||`<tr><td colspan="2" class="note">No duties this month.</td></tr>`}</tbody></table></div>
+  <div class="row noprint" style="margin:8px 0"><button class="btn sm" id="mics">Add to my calendar</button></div>
   <p class="note">${n24} × 24${isRes?" · "+nam+" mornings · "+(n24+nam)+" days in all":""} · <b>${n24*H24+(isRes?nam*HAM:0)} hours</b></p>`;
   const nm=name.trim().toLowerCase();
   const L=lecSorted().filter(l=>l.date>=t&&(isRes?l.presenter===id:(l.presenterText||"").toLowerCase().includes(nm)||(l.notes||"").toLowerCase().includes(nm)));
   h+=`<h3>My lectures</h3><div class="panel">${L.map(l=>`<div class="kv"><span>${esc(l.title)}<div class="note">${esc(l.type||"")}${l.ref?" · "+esc(l.ref):""}</div></span><span>${fd(l.date)} ${esc(l.time||"")}</span></div>`).join("")||'<p class="note">No upcoming lectures for you.</p>'}</div>`;
-  if(isRes){const E=examSorted().filter(e=>e.date>=t).slice(0,3);
+  if(isRes){const E=examSorted().filter(e=>e.date>=t&&examFor(e,resById(id))).slice(0,3);
     h+=`<h3>Next exams</h3><div class="panel">${E.map(e=>`<div class="kv"><span>${esc(e.name)}</span><span>${fd(e.date)} ${esc(e.time||"")}</span></div>`).join("")||'<p class="note">No exams coming up.</p>'}</div>`}
   return h;
 }
@@ -858,6 +865,173 @@ function frameSheet(id){const s=id?ST.frame.find(x=>x.id===id):{title:"",body:""
   $("#f_save").onclick=()=>{const v={title:$("#f_t").value.trim(),body:$("#f_b").value};if(!v.title)return;if(id)Object.assign(s,v);else ST.frame.push(Object.assign({id:uid()},v));save();closeSheet();rerender()};
   if(id)$("#f_del").onclick=()=>{if(confirm("Delete this section?")){ST.frame=ST.frame.filter(x=>x.id!==id);save();closeSheet();rerender()}};
 }
+/* ================= exam years ================= */
+const exYears=e=>Array.isArray(e.years)&&e.years.length?e.years:null;
+const examFor=(e,r)=>!!r&&(!exYears(e)||exYears(e).includes(r.level)||(ST.scores[e.id]||{})[r.id]!=null);
+const exYrTag=e=>exYears(e)?`<span class="tag">${exYears(e).map(y=>"R"+y).join(", ")} only</span>`:"";
+
+/* ================= logbook ================= */
+let LOGR="",LOGP="all";
+function LOGB(){if(!Array.isArray(ST.logbook))ST.logbook=[];return ST.logbook}
+const procById=id=>(ST.procs||[]).find(p=>p.id===id);
+const procName=x=>{const p=procById(x.proc);return p?p.name:(x.procText||"Other")};
+const tgtNum=p=>{const m=String(p&&p.target||"").match(/\d+/);return m?+m[0]:0};
+function periodRange(k){const t=today();if(k==="3m")return [addD(t,-91),t];if(k==="year")return [ST.yearStart||"0000",t];return ["0000","9999"]}
+const periodSel=(id,v)=>`<select class="f2" id="${id}">${opt("all","All time",v==="all")}${opt("3m","Last 3 months",v==="3m")}${opt("year","This academic year",v==="year")}</select>`;
+function logCounts(rid,a,b){const c={};LOGB().filter(x=>x.rid===rid&&x.date>=a&&x.date<=b).forEach(x=>{const k=x.proc||("t:"+(x.procText||"Other"));const o=c[k]=c[k]||[0,0,0,0,0];o[+x.role||0]+=(+x.n||1)});return c}
+function vLog(){
+  const R=sortedRes();if(LOGR&&!resById(LOGR))LOGR="";if(!LOGR&&R.length)LOGR=R[0].id;
+  let h=`<h2>Logbook</h2><p class="lead">Each case with the resident's role. Performed (under supervision or independent) counts toward the target.</p>
+  <div class="panel noprint" style="margin-bottom:12px"><div class="row"><div style="flex:2;min-width:160px">${field("Resident",`<select class="f2" id="logr">${R.map(r=>opt(r.id,r.name+" (R"+r.level+")",r.id===LOGR)).join("")}</select>`)}</div><div style="flex:1;min-width:140px">${field("Period",periodSel("logp",LOGP))}</div></div>
+  <div class="row"><button class="btn p" id="addlog">+ Add case</button><button class="btn" id="logcsv">Excel</button><button class="btn" onclick="window.print()">Print report</button></div></div>`;
+  if(!R.length)return h+`<div class="empty">Add residents first.</div>`;
+  const r=resById(LOGR),[a,b]=periodRange(LOGP),c=logCounts(r.id,a,b);
+  h+=`<p class="note print-only" style="display:none">${esc(ST.name)} · Logbook · ${esc(r.name)} R${r.level} · ${LOGP==="all"?"All time":fdy(a)+" – "+fdy(b)}</p>`;
+  const P=ST.procs||[],groups=[...new Set(P.map(p=>p.group))];let tot=[0,0,0,0,0],met=0,withT=0;
+  let rows="";groups.forEach(g=>{let gr="";P.filter(p=>p.group===g).forEach(p=>{const k=c[p.id]||[0,0,0,0,0];const exp=(p.lv||[])[Math.min(r.level,5)-1]||0;const tg=tgtNum(p);const done=k[3]+k[4];
+      k.forEach((v,i)=>tot[i]+=v);if(tg){withT++;if(done>=tg)met++}
+      if(!k.some(Boolean)&&!exp)return;
+      const pct=tg?Math.min(100,Math.round(done/tg*100)):null;
+      gr+=`<tr><td class="p">${esc(p.name)}</td><td class="c">${exp?`<i class="L${exp}" title="${LV[exp]}">${LS[exp]}</i>`:"–"}</td>${[1,2,3,4].map(i=>`<td class="n">${k[i]||""}</td>`).join("")}<td class="n">${tg?`<span class="${done>=tg?"pass":""}">${done}/${tg}</span><div class="bar"><i style="width:${pct}%"></i></div>`:done||""}</td></tr>`});
+    if(gr)rows+=`<tr class="grp"><td colspan="7">${esc(g)}</td></tr>`+gr});
+  Object.keys(c).filter(k=>k.startsWith("t:")).forEach((k,i)=>{const v=c[k];v.forEach((x,j)=>tot[j]+=x);if(!i)rows+=`<tr class="grp"><td colspan="7">Other</td></tr>`;rows+=`<tr><td class="p">${esc(k.slice(2))}</td><td class="c">–</td>${[1,2,3,4].map(j=>`<td class="n">${v[j]||""}</td>`).join("")}<td class="n">${v[3]+v[4]||""}</td></tr>`});
+  const all=tot.reduce((x,y)=>x+y,0);
+  h+=`<div class="kpis"><div><b>${all}</b><span>cases logged</span></div><div><b>${tot[3]+tot[4]}</b><span>performed</span></div><div><b>${met}/${withT}</b><span>targets met</span></div></div>`;
+  h+=`<div class="panel" style="overflow-x:auto;margin-top:12px"><table class="mx log"><thead><tr><th>Procedure</th><th title="Expected level this year">R${r.level}</th><th>O</th><th>A</th><th>S</th><th>I</th><th style="text-align:right">Performed / target</th></tr></thead><tbody>${rows||'<tr><td colspan="7" class="note">No cases logged in this period.</td></tr>'}</tbody></table>
+  <p class="note" style="margin:8px 0 0">O observed · A assisted · S performed under supervision · I independent. The R${r.level} column is the expected level from Operative levels.</p></div>`;
+  const E=LOGB().filter(x=>x.rid===r.id&&x.date>=a&&x.date<=b).sort((x,y)=>y.date.localeCompare(x.date));
+  h+=`<h3>Cases</h3><div class="panel">${E.slice(0,60).map(x=>`<div class="kv"><span>${fd(x.date)} <b>${esc(procName(x))}</b>${+x.n>1?" ×"+x.n:""}<br><span class="note">${LV[+x.role||0]}${x.sup?" · "+esc(x.sup):""}${x.notes?" · "+esc(x.notes):""}</span></span><span class="noprint"><button class="btn sm mini" data-edlog="${x.id}">Edit</button></span></div>`).join("")||'<p class="note">None yet.</p>'}${E.length>60?`<p class="note">Showing the latest 60 of ${E.length}. Excel has all of them.</p>`:""}</div>`;
+  return h;
+}
+function procOptions(sel){const P=ST.procs||[];return [...new Set(P.map(p=>p.group))].map(g=>`<optgroup label="${esc(g)}">${P.filter(p=>p.group===g).map(p=>opt(p.id,p.name,p.id===sel)).join("")}</optgroup>`).join("")+opt("","Other (type below)",!sel)}
+function logSheet(id){const x=id?LOGB().find(e=>e.id===id):{rid:LOGR,date:today(),proc:"",procText:"",role:2,n:1,sup:"",notes:""};if(!x)return;
+  openSheet(`<h3>${id?"Edit case":"Add case"}</h3>
+  ${field("Resident",`<select class="f2" id="g_r">${sortedRes().map(r=>opt(r.id,r.name+" (R"+r.level+")",r.id===x.rid)).join("")}</select>`)}
+  <div class="row"><div style="flex:1;min-width:140px">${field("Date",inp("g_d",x.date,'type="date"'))}</div><div style="flex:1;min-width:90px">${field("Number of cases",inp("g_n",x.n||1,'type="number" min="1"'))}</div></div>
+  ${field("Procedure",`<select class="f2" id="g_p">${procOptions(x.proc)}</select>`)}${field("Other procedure (if not on the list)",inp("g_pt",x.procText))}
+  ${field("Role",`<select class="f2" id="g_role">${[1,2,3,4].map(k=>opt(k,LV[k],k===+x.role)).join("")}</select>`)}
+  ${field("Supervising consultant",inp("g_sup",x.sup,'list="trdl2"')+dlist("trdl2",trainersList()))}
+  ${field("Notes (no patient names)",inp("g_notes",x.notes))}
+  <div class="row"><button class="btn p" id="g_save">Save</button>${id?"":'<button class="btn" id="g_more">Save and add another</button>'}<button class="btn" id="g_cancel">Cancel</button>${id?'<button class="btn d" id="g_del">Delete</button>':""}</div>`);
+  const val=()=>({rid:$("#g_r").value,date:$("#g_d").value,proc:$("#g_p").value,procText:$("#g_p").value?"":$("#g_pt").value.trim(),role:+$("#g_role").value,n:Math.max(1,+$("#g_n").value||1),sup:$("#g_sup").value.trim(),notes:$("#g_notes").value.trim()});
+  const put=()=>{const v=val();if(!v.rid||!v.date||(!v.proc&&!v.procText)){toast("Choose the resident, date and procedure");return false}
+    if(id)Object.assign(x,v);else LOGB().push(Object.assign({id:uid()},v));LOGR=v.rid;save();return true};
+  $("#g_cancel").onclick=closeSheet;
+  $("#g_save").onclick=()=>{if(put()){closeSheet();toast("Saved");rerender()}};
+  if(!id)$("#g_more").onclick=()=>{if(put()){toast("Saved");$("#g_pt").value="";$("#g_notes").value="";$("#g_n").value=1;rerender()}};
+  if(id)$("#g_del").onclick=()=>{if(!confirm("Delete this case?"))return;ST.logbook=LOGB().filter(e=>e.id!==id);save();closeSheet();rerender()};
+}
+function logCsv(){const rows=[["Date","Resident","Year","Group","Procedure","Role","Cases","Supervisor","Notes"]].concat(LOGB().slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{const r=resById(x.rid)||{};const p=procById(x.proc);return [x.date,r.name||"",r.level?"R"+r.level:"",p?p.group:"",procName(x),LV[+x.role||0],x.n||1,x.sup,x.notes]}));
+  download(new Blob([csv(rows)],{type:"text/csv"}),"logbook.csv")}
+
+/* ================= assessments (Mini-CEX, DOPS) ================= */
+const WBA={
+ "Mini-CEX":{max:9,band:v=>v<=3?"Below expectations":v<=6?"Meets expectations":"Above expectations",dom:["History taking","Physical examination","Professionalism","Clinical judgement","Communication","Organisation and efficiency","Overall clinical care"]},
+ "DOPS":{max:6,band:v=>v<=2?"Below expectations":v===3?"Borderline":v===4?"Meets expectations":"Above expectations",dom:["Indications and relevant anatomy","Informed consent","Preparation before the procedure","Analgesia or anaesthesia","Technical ability","Aseptic technique","Seeks help when needed","Care after the procedure","Communication","Professionalism","Overall performance"]}};
+let EVR="",EVP="year";
+function EVS(){if(!Array.isArray(ST.evals))ST.evals=[];return ST.evals}
+const evOverall=x=>{const W=WBA[x.type];if(!W)return null;const v=(x.scores||{})[W.dom[W.dom.length-1]];return v?+v:null};
+const evPct=x=>{const v=evOverall(x),W=WBA[x.type];return v&&W?Math.round(v/W.max*100):null};
+function vEval(){
+  const R=sortedRes(),[a,b]=periodRange(EVP);
+  let h=`<h2>Assessments</h2><p class="lead">Mini-CEX for clinical encounters and DOPS for procedures. Open one to see every domain.</p>
+  <div class="panel noprint" style="margin-bottom:12px"><div class="row"><div style="flex:2;min-width:160px">${field("Resident",`<select class="f2" id="evr">${opt("","Everyone",!EVR)}${R.map(r=>opt(r.id,r.name+" (R"+r.level+")",r.id===EVR)).join("")}</select>`)}</div><div style="flex:1;min-width:140px">${field("Period",periodSel("evp",EVP))}</div></div>
+  <div class="row"><button class="btn p" id="addev" data-t="Mini-CEX">+ Mini-CEX</button><button class="btn p" id="addev2" data-t="DOPS">+ DOPS</button><button class="btn" id="evcsv">Excel</button><button class="btn" onclick="window.print()">Print</button></div></div>`;
+  if(!R.length)return h+`<div class="empty">Add residents first.</div>`;
+  const E=EVS().filter(x=>x.date>=a&&x.date<=b&&(!EVR||x.rid===EVR)).sort((x,y)=>y.date.localeCompare(x.date));
+  h+=`<div class="panel" style="padding:4px 8px;overflow-x:auto"><table class="rep"><thead><tr><th>Resident</th><th class="n">Mini-CEX</th><th class="n">DOPS</th><th class="n">Average overall</th><th>Last</th></tr></thead><tbody>${R.filter(r=>!EVR||r.id===EVR).map(r=>{const m=E.filter(x=>x.rid===r.id);const p=m.map(evPct).filter(v=>v!=null);
+    return `<tr><td>${esc(r.name)} <span class="note">R${r.level}</span></td><td class="n">${m.filter(x=>x.type==="Mini-CEX").length}</td><td class="n">${m.filter(x=>x.type==="DOPS").length}</td><td class="n">${p.length?avgArr(p)+"%":"—"}</td><td>${m[0]?fd(m[0].date):"—"}</td></tr>`}).join("")}</tbody></table></div>`;
+  h+=`<h3>Forms</h3><div class="panel">${E.map(x=>{const r=resById(x.rid)||{name:"—"},v=evOverall(x),W=WBA[x.type];
+    return `<div class="kv" data-ev="${x.id}" style="cursor:pointer"><span>${fd(x.date)} <b>${esc(r.name)}</b> <span class="tag">${esc(x.type)}</span><br><span class="note">${esc(x.focus||"")}${x.assessor?" · "+esc(x.assessor):""}</span></span><span>${v?`<b>${v}/${W.max}</b><div class="note">${W.band(v)}</div>`:"—"}</span></div>`}).join("")||'<p class="note">No assessments in this period.</p>'}</div>`;
+  return h;
+}
+function evalSheet(id,type){const x=id?EVS().find(e=>e.id===id):{rid:EVR||"",date:today(),type,assessor:"",setting:"",focus:"",scores:{},strengths:"",improve:"",action:""};if(!x)return;const W=WBA[x.type];
+  openSheet(`<h3>${esc(x.type)}</h3>
+  ${field("Resident",`<select class="f2" id="e_r">${sortedRes().map(r=>opt(r.id,r.name+" (R"+r.level+")",r.id===x.rid)).join("")}</select>`)}
+  <div class="row"><div style="flex:1;min-width:140px">${field("Date",inp("e_d",x.date,'type="date"'))}</div><div style="flex:1;min-width:140px">${field("Assessor",inp("e_as",x.assessor,'list="trdl3"')+dlist("trdl3",trainersList()))}</div></div>
+  <div class="row"><div style="flex:1;min-width:140px">${field("Setting",`<select class="f2" id="e_set">${["","Clinic","Ward","Emergency","Theatre","Other"].map(s=>opt(s,s||"—",s===x.setting)).join("")}</select>`)}</div><div style="flex:2;min-width:160px">${field(x.type==="DOPS"?"Procedure":"Case or problem",inp("e_f",x.focus,x.type==="DOPS"?'list="dl_pr"':"")+(x.type==="DOPS"?dlist("dl_pr",(ST.procs||[]).map(p=>p.name)):""))}</div></div>
+  <p class="note">Score 1 to ${W.max}. ${x.type==="DOPS"?"1–2 below, 3 borderline, 4 meets, 5–6 above expectations.":"1–3 below, 4–6 meets, 7–9 above expectations."} Leave empty if not observed.</p>
+  <div class="panel">${W.dom.map((d,i)=>`<label class="f" style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="flex:1">${esc(d)}</span><select class="f2" style="width:auto" data-esc="${i}">${opt("","n/a",!x.scores[d])}${Array.from({length:W.max},(_,k)=>opt(k+1,k+1,+x.scores[d]===k+1)).join("")}</select></label>`).join("")}</div>
+  ${field("What went well",`<textarea class="f2" id="e_s" rows="2">${esc(x.strengths)}</textarea>`)}
+  ${field("What to improve",`<textarea class="f2" id="e_i" rows="2">${esc(x.improve)}</textarea>`)}
+  ${field("Agreed action",inp("e_a",x.action))}
+  <div class="row"><button class="btn p" id="e_save">Save</button><button class="btn" id="e_cancel">Cancel</button>${id?'<button class="btn" id="e_share">Share</button><button class="btn d" id="e_del">Delete</button>':""}</div>`);
+  $("#e_cancel").onclick=closeSheet;
+  $("#e_save").onclick=()=>{const sc={};$$("[data-esc]").forEach(s=>{if(s.value)sc[W.dom[+s.dataset.esc]]=+s.value});
+    const v={rid:$("#e_r").value,date:$("#e_d").value,type:x.type,assessor:$("#e_as").value.trim(),setting:$("#e_set").value,focus:$("#e_f").value.trim(),scores:sc,strengths:$("#e_s").value.trim(),improve:$("#e_i").value.trim(),action:$("#e_a").value.trim()};
+    if(!v.rid||!v.date){toast("Choose the resident and date");return}if(id)Object.assign(x,v);else EVS().push(Object.assign({id:uid()},v));EVR=EVR&&v.rid;save();closeSheet();toast("Saved");rerender()};
+  if(id){$("#e_del").onclick=()=>{if(!confirm("Delete this assessment?"))return;ST.evals=EVS().filter(e=>e.id!==id);save();closeSheet();rerender()};
+    $("#e_share").onclick=()=>{const r=resById(x.rid)||{};shareText(`${x.type}: ${r.name||""} (R${r.level||""})\n${fdw(x.date)}${x.assessor?" · "+x.assessor:""}${x.setting?" · "+x.setting:""}\n${x.focus||""}\n\n`+W.dom.filter(d=>x.scores[d]).map(d=>`${d}: ${x.scores[d]}/${W.max}`).join("\n")+(x.strengths?`\n\nWent well: ${x.strengths}`:"")+(x.improve?`\nTo improve: ${x.improve}`:"")+(x.action?`\nAction: ${x.action}`:""))}}
+}
+function evCsv(){const D=[...WBA["Mini-CEX"].dom,...WBA.DOPS.dom.filter(d=>!WBA["Mini-CEX"].dom.includes(d))];
+  const rows=[["Date","Resident","Year","Form","Assessor","Setting","Case or procedure",...D,"Went well","To improve","Action"]].concat(EVS().slice().sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{const r=resById(x.rid)||{};return [x.date,r.name||"",r.level?"R"+r.level:"",x.type,x.assessor,x.setting,x.focus,...D.map(d=>(x.scores||{})[d]??""),x.strengths,x.improve,x.action]}));
+  download(new Blob([csv(rows)],{type:"text/csv"}),"assessments.csv")}
+
+/* ================= roster generator ================= */
+const WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],WDO=[6,0,1,2,3,4,5];
+function RULES(){const D=DU();if(!D.rules||typeof D.rules!=="object")D.rules={};const R=D.rules;R.res=R.res||{};R.sp=R.sp||{};R.fri=R.fri||{};if(!R.opts)R.opts={clinic:true,post:true};if(!Array.isArray(R.clinicDays))R.clinicDays=[0,2,4];return R}
+const rr=id=>{const R=RULES();return R.res[id]=R.res[id]||{oc:[],am:[],noam:[]}};
+const wdChips=(key,id,arr)=>`<span class="wdc">${WDO.filter(w=>w!==5||key!=="ruoc").map(w=>`<label><input type="checkbox" data-${key}="${id}|${w}" ${arr.includes(w)?"checked":""}><span>${WD[w]}</span></label>`).join("")}</span>`;
+function learnRules(m){const R=RULES(),days=moDays(m);if(!days.some(d=>DU().days[d])){toast("That month is empty");return false}
+  const cnt={};const z=(id,k,w)=>{cnt[id]=cnt[id]||{oc:{},am:{}};cnt[id][k][w]=(cnt[id][k][w]||0)+1};const sp={};
+  const elig={},got={};const inc=(o,id,w)=>{o[id]=o[id]||{};o[id][w]=(o[id][w]||0)+1};
+  days.forEach(d=>{const x=dutyOf(d),w=dt(d).getDay(),prev=dutyOf(addD(d,-1)).oc;if(w!==5)x.oc.forEach(id=>z(id,"oc",w));
+    ST.residents.forEach(r=>{if(x.oc.includes(r.id))return;const byRule=(R.opts.clinic&&r.level<=2&&R.clinicDays.includes(w))||(R.opts.post&&w!==5&&prev.includes(r.id));if(byRule){inc(elig,r.id,w);if(x.am.includes(r.id))inc(got,r.id,w)}});
+    x.am.forEach(id=>{const r=resById(id);if(!r||x.oc.includes(id))return;if(R.opts.clinic&&r.level<=2&&R.clinicDays.includes(w))return;if(R.opts.post&&w!==5&&prev.includes(id))return;z(id,"am",w)});
+    if(x.sp&&w!==5){sp[w]=sp[w]||{};sp[w][x.sp]=(sp[w][x.sp]||0)+1}});
+  ST.residents.forEach(r=>{const c=cnt[r.id]||{oc:{},am:{}};const o=rr(r.id);o.oc=Object.keys(c.oc).filter(w=>c.oc[w]>=2).map(Number);o.am=Object.keys(c.am).filter(w=>c.am[w]>=2).map(Number);
+    const e=elig[r.id]||{},g=got[r.id]||{};o.noam=Object.keys(e).filter(w=>e[w]>=2&&!g[w]).map(Number)});
+  Object.entries(sp).forEach(([w,o])=>{R.sp[w]=Object.entries(o).sort((a,b)=>b[1]-a[1])[0][0]});return true}
+function genMonth(m){const R=RULES(),D=DU(),days=moDays(m),res=ST.residents,out={};
+  days.forEach(d=>{const w=dt(d).getDay();out[d]={oc:w===5?[]:res.filter(r=>rr(r.id).oc.includes(w)).map(r=>r.id),am:[],sp:w===5?"":(R.sp[w]||"")}});
+  days.filter(d=>dt(d).getDay()===5).forEach(f=>{const F=R.fri[f]||{oc:[],sp:""};out[f].oc=F.oc.filter(resById);out[f].sp=F.sp||"";
+    F.oc.forEach(id=>{const own=rr(id).oc;for(const k of [-1,1,-2,2,-3,3]){const d=addD(f,k);if(out[d]&&own.includes(dt(d).getDay())&&out[d].oc.includes(id)){out[d].oc=out[d].oc.filter(x=>x!==id);break}}})});
+  days.forEach((d,i)=>{const w=dt(d).getDay(),x=out[d],prev=i?out[days[i-1]].oc:(dutyOf(addD(d,-1)).oc);
+    x.am=res.filter(r=>{if(x.oc.includes(r.id))return false;const o=rr(r.id);if(o.noam.includes(w))return false;
+      return o.am.includes(w)||(R.opts.clinic&&r.level<=2&&R.clinicDays.includes(w))||(R.opts.post&&w!==5&&prev.includes(r.id))}).map(r=>r.id)});
+  days.forEach(d=>{const x=out[d];if(!x.oc.length&&!x.am.length&&!x.sp)delete D.days[d];else D.days[d]=x})}
+function rulesSheet(){const R=RULES(),fr=moDays(DMO).filter(isFri);
+  openSheet(`<h3>Roster rules</h3><p class="note">The generator fills ${moName(DMO)} from these rules. You can still change any day by hand afterwards.</p>
+  <div class="row"><button class="btn sm" id="ru_learn">Learn from ${moName(addMo(DMO,-1))}</button></div>
+  <h3>Each resident</h3>${sortedRes().map(r=>{const o=rr(r.id);return `<div class="panel" style="margin-top:6px"><b>${esc(r.name)}</b> <span class="note">R${r.level}</span>
+   <div class="note" style="margin-top:6px">24 on</div>${wdChips("ruoc",r.id,o.oc)}<div class="note">Extra mornings</div>${wdChips("ruam",r.id,o.am)}<div class="note">Never a morning on</div>${wdChips("runo",r.id,o.noam)}</div>`}).join("")}
+  <h3>General</h3><div class="panel">
+   <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="ru_post" ${R.opts.post?"checked":""}> Morning the day after a 24 (not on Friday)</label>
+   <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="ru_cl" ${R.opts.clinic?"checked":""}> R1 and R2 attend clinic mornings on</label>${wdChips("rucl","x",R.clinicDays)}</div>
+  <h3>Specialist by weekday</h3><div class="panel">${WDO.filter(w=>w!==5).map(w=>`<label class="f" style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="width:44px">${WD[w]}</span><input class="f2" data-rusp="${w}" value="${esc(R.sp[w]||"")}" list="trdl4"></label>`).join("")}${dlist("trdl4",trainersList())}</div>
+  <h3>Fridays in ${moName(DMO)}</h3><p class="note">Pick who does each Friday 24. Each one is taken off their nearest own 24 that week.</p>${fr.map(f=>{const F=R.fri[f]||{oc:[],sp:""};return `<div class="panel" style="margin-top:6px"><b>${fdw(f)}</b><div class="attl">${sortedRes().map(r=>`<label><input type="checkbox" data-rufr="${f}|${r.id}" ${F.oc.includes(r.id)?"checked":""}> ${esc(r.name)} <span class="note">R${r.level}</span></label>`).join("")}</div>${field("Specialist",`<input class="f2" data-rufsp="${f}" value="${esc(F.sp||"")}" list="trdl4">`)}</div>`}).join("")}
+  <div class="row" style="margin-top:12px"><button class="btn p" id="ru_gen">Save and fill ${moName(DMO)}</button><button class="btn" id="ru_save">Save rules only</button><button class="btn" id="ru_cancel">Cancel</button></div>`);
+  const keep=()=>{const g=k=>[...document.querySelectorAll(`[data-${k}]`)].filter(c=>c.checked).map(c=>c.getAttribute("data-"+k).split("|"));
+    ST.residents.forEach(r=>{const o=rr(r.id);o.oc=[];o.am=[];o.noam=[]});
+    g("ruoc").forEach(([id,w])=>rr(id).oc.push(+w));g("ruam").forEach(([id,w])=>rr(id).am.push(+w));g("runo").forEach(([id,w])=>rr(id).noam.push(+w));
+    R.clinicDays=g("rucl").map(([,w])=>+w);R.opts={post:$("#ru_post").checked,clinic:$("#ru_cl").checked};
+    $$("[data-rusp]").forEach(i=>{const v=i.value.trim();if(v)R.sp[i.dataset.rusp]=v;else delete R.sp[i.dataset.rusp]});
+    fr.forEach(f=>{R.fri[f]={oc:g("rufr").filter(([d])=>d===f).map(([,id])=>id),sp:(document.querySelector(`[data-rufsp="${f}"]`).value||"").trim()}})};
+  $("#ru_cancel").onclick=closeSheet;
+  $("#ru_learn").onclick=()=>{keep();if(learnRules(addMo(DMO,-1))){save();toast("Rules learned. Check them below.");rulesSheet()}};
+  $("#ru_save").onclick=()=>{keep();save();closeSheet();toast("Saved")};
+  $("#ru_gen").onclick=()=>{keep();if(moDays(DMO).some(d=>DU().days[d])&&!confirm("Replace the whole of "+moName(DMO)+" with the generated roster?"))return;genMonth(DMO);save();closeSheet();toast("Month filled. Check the warnings.");rerender()};
+}
+
+/* ================= calendar file (.ics) ================= */
+function icsFor(k,m){const isRes=k.startsWith("r:"),id=k.slice(2),t=today();const ev=[];const st=(d,h)=>d.replace(/-/g,"")+"T"+pad(h)+"0000";
+  const add=(uidp,d,h1,d2,h2,sum,desc)=>ev.push(["BEGIN:VEVENT","UID:"+uidp+"@ent-residency","DTSTAMP:"+st(t,0),"DTSTART:"+st(d,h1),"DTEND:"+st(d2,h2),"SUMMARY:"+icsEsc(sum),desc?"DESCRIPTION:"+icsEsc(desc):"","BEGIN:VALARM","TRIGGER:-PT12H","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(sum),"END:VALARM","END:VEVENT"].filter(Boolean).join("\r\n"));
+  moDays(m).forEach(d=>{const x=dutyOf(d);
+    if(isRes){if(x.oc.includes(id))add("d"+d+id,d,8,addD(d,1),8,"24 duty",x.sp?"Specialist: "+x.sp:"");else if(x.am.includes(id))add("m"+d+id,d,8,d,14,"Morning duty","")}
+    else if(x.sp&&x.sp.trim().toLowerCase()===id.trim().toLowerCase())add("s"+d+id.replace(/\W/g,""),d,8,addD(d,1),8,"24 duty (specialist)","")});
+  if(isRes){const r=resById(id);lecSorted().filter(l=>l.date>=t&&l.presenter===id).forEach(l=>{const h=+(l.time||"12:00").split(":")[0];add("l"+l.id,l.date,h,l.date,h+1,"Lecture: "+l.title,l.ref||"")});
+    examSorted().filter(e=>e.date>=t&&examFor(e,r)).forEach(e=>{const h=+(e.time||"09:00").split(":")[0];add("e"+e.id,e.date,h,e.date,h+2,"Exam: "+e.name,e.topics||"")})}
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//ENT Residency//EN","CALSCALE:GREGORIAN","X-WR-CALNAME:"+icsEsc(ST.name)].concat(ev,["END:VCALENDAR"]).join("\r\n")}
+const icsEsc=s=>String(s||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/([,;])/g,"\\$1");
+function bindPhase1(){const on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};const ch=(sel,f)=>{const e=$(sel);if(e)e.onchange=f};
+  ch("#logr",()=>{LOGR=$("#logr").value;rerender()});ch("#logp",()=>{LOGP=$("#logp").value;rerender()});
+  on("#addlog",()=>logSheet(null));on("#logcsv",logCsv);$$("[data-edlog]").forEach(b=>b.onclick=()=>logSheet(b.dataset.edlog));
+  ch("#evr",()=>{EVR=$("#evr").value;rerender()});ch("#evp",()=>{EVP=$("#evp").value;rerender()});
+  on("#addev",()=>evalSheet(null,"Mini-CEX"));on("#addev2",()=>evalSheet(null,"DOPS"));on("#evcsv",evCsv);$$("[data-ev]").forEach(b=>b.onclick=()=>evalSheet(b.dataset.ev));
+  on("#drules",rulesSheet);
+  on("#mics",()=>{const k=myKey();if(!k)return;download(new Blob([icsFor(k,MMO)],{type:"text/calendar"}),"duty-"+MMO+".ics")});
+}
+
 /* ================= settings ================= */
 function vSettings(){
   return `<h2>Settings</h2><div class="panel noprint">${field("Program name",inp("sname",ST.name))}
@@ -936,7 +1110,7 @@ function bind(){
   on("#addex",()=>examSheet(null));
   v.querySelectorAll("[data-edx]").forEach(b=>b.onclick=()=>examSheet(b.dataset.edx));
   v.querySelectorAll("[data-res]").forEach(b=>b.onclick=()=>resultsSheet(b.dataset.res));
-  on("#excsv",()=>{const E=examSorted();const rows=[["Date","Time","Exam","Type","Place","Topics","Full mark","Pass mark"].concat(VIEWER?[]:sortedRes().map(r=>r.name))].concat(E.map(e=>[e.date,e.time,e.name,e.type,e.place,e.topics,e.max,e.pass].concat(VIEWER?[]:sortedRes().map(r=>{const x=(ST.scores[e.id]||{})[r.id];return x==null?"":x}))));download(new Blob([csv(rows)],{type:"text/csv"}),"exams.csv")});
+  on("#excsv",()=>{const E=examSorted();const rows=[["Date","Time","Exam","Type","For","Place","Topics","Full mark","Pass mark"].concat(VIEWER?[]:sortedRes().map(r=>r.name))].concat(E.map(e=>[e.date,e.time,e.name,e.type,exYears(e)?exYears(e).map(y=>"R"+y).join(" "):"All",e.place,e.topics,e.max,e.pass].concat(VIEWER?[]:sortedRes().map(r=>{const x=(ST.scores[e.id]||{})[r.id];return x==null?"":x}))));download(new Blob([csv(rows)],{type:"text/csv"}),"exams.csv")});
   // rotations
   on("#rtypes",rotTypesSheet);on("#addrot",()=>rotSheet(sortedRes()[0]&&sortedRes()[0].id,null,null));
   on("#rprev",()=>{RSTART=addM(RSTART,-3);rerender()});on("#rnext",()=>{RSTART=addM(RSTART,3);rerender()});
@@ -969,6 +1143,7 @@ function bind(){
   on("#bexp",()=>{const d=JSON.parse(JSON.stringify(ST));delete d.pinHash;delete d.pinSalt;download(new Blob([JSON.stringify(d,null,1)],{type:"application/json"}),"ent-program-backup-"+today()+".json")});
   const bi=$("#bimp");if(bi)bi.onchange=async()=>{const f=bi.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!confirm("Replace everything with this backup?"))return;const keep={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};ST=Object.assign({},DEF,d,keep);migrate();seedTables();save();toast("Imported");render()}catch(e){toast("That file could not be read")}};
   bindDuty();
+  bindPhase1();
   bindMine();
   bindAccess();
 }
@@ -996,7 +1171,7 @@ const FBV="10.12.2",FB="https://www.gstatic.com/firebasejs/"+FBV+"/";
 let LIVE=null; // {auth,db,fs,user,role,unsub:[]}
 let CFG=null,pendingRender=false,writeT=null,lastWrite=0;
 const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime","duty","who","trainers"];
-const PRIVATE_KEYS=["scores","att","rotTypes","rot","rp","graduates","theatre","procs","frame","lecTypes","examTypes","yearStart"];
+const PRIVATE_KEYS=["scores","att","rotTypes","rot","rp","graduates","theatre","procs","frame","lecTypes","examTypes","yearStart","logbook","evals"];
 function pick(o,keys){const r={};keys.forEach(k=>{if(o[k]!==undefined)r[k]=o[k]});return r}
 function isEditing(){const a=document.activeElement;return $("#scrim").classList.contains("open")||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))}
 function liveRender(){if(isEditing()){pendingRender=true;return}pendingRender=false;rerender()}
@@ -1055,11 +1230,11 @@ async function resolveRole(){
     const pub=await fs.getDoc(pubRef).catch(()=>null),prv=await fs.getDoc(prvRef).catch(()=>null);
     const pd=pub&&pub.exists()?pub.data():null,vd=prv&&prv.exists()?prv.data():null;
     if(!pd){migrate();seedTables();await pushNow();toast("Your program was uploaded to the cloud")}
-    else{const local={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};ST=Object.assign({},DEF,pd,vd||{},local);
+    else{const local={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};const keep={};["logbook","evals"].forEach(k=>{if((!vd||vd[k]===undefined)&&Array.isArray(ST[k])&&ST[k].length)keep[k]=ST[k]});ST=Object.assign({},DEF,pd,vd||{},local,keep);if(Object.keys(keep).length)setTimeout(()=>pushLive(),500);
       if(migrate()){seedTables();await pushNow();toast("Program updated to the new version")}else seedTables();saveLocal()}
-    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data();if(!d||s.metadata.hasPendingWrites)return;PRIVATE_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});seedTables();saveLocal();liveRender()}));
+    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data();if(!d||s.metadata.hasPendingWrites)return;PRIVATE_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});seedTables();saveLocal();liveRender();if(["logbook","evals"].some(k=>d[k]===undefined&&ST[k]&&ST[k].length))pushLive()}));
     LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","lists"),s=>{LIVE.lists=s.data()||{admins:[],viewers:[]};if(TAB==="settings")liveRender()},()=>{}));
-  }else{ST.scores={};ST.att={};ST.rot={};ST.rp={};ST.rotTypes=[];ST.theatre={lists:[],weeks:{}};ST.graduates=[];ST.procs=[];ST.frame=[]}
+  }else{ST.scores={};ST.att={};ST.rot={};ST.rp={};ST.rotTypes=[];ST.theatre={lists:[],weeks:{}};ST.graduates=[];ST.procs=[];ST.frame=[];ST.logbook=[];ST.evals=[]}
   LIVE.unsub.push(fs.onSnapshot(pubRef,s=>{const d=s.data();if(d&&!(s.metadata.hasPendingWrites&&!VIEWER)){PUBLIC_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});["lectures","exams","residents"].forEach(k=>{if(!Array.isArray(ST[k]))ST[k]=[]});if(!VIEWER)saveLocal()}
     setSync(s.metadata.hasPendingWrites?"Waiting for internet to save…":"Up to date");liveRender()}));
   if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="week";

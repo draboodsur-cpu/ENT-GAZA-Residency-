@@ -169,7 +169,7 @@ select.f2,input.f2,textarea.f2{width:100%;padding:8px 10px;border:1px solid var(
 <body>
 <header class="app"><div class="in"><h1 id="pname">ENT Residency Program</h1><p id="psub"></p></div>
 <nav class="tabs" role="tablist">
- <button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
+ <button data-t="mine">My schedule</button><button data-t="week">This week</button><button data-t="lectures">Lectures</button><button data-t="exams">Exams</button><button data-t="theatre">Theatre</button><button data-t="duty">Duty roster</button><button data-t="rot">Rotations</button><button data-t="people">Residents</button><button data-t="report">Reports</button><button data-t="ops">Operative levels</button><button data-t="frame">Framework</button><button data-t="settings">Settings</button>
 </nav></header>
 <main id="view"></main>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
@@ -353,7 +353,7 @@ function old_applyEdits(out){
 }
 /* ================= state ================= */
 const KEY="ent-program-v1";
-const DEF={name:"ENT Residency Program",defTime:"12:00",yearStart:null,residents:[],lectures:[],exams:[],scores:{},att:{},rotTypes:[],rot:{},rp:{},graduates:[],theatre:{lists:[],weeks:{}},duty:{days:{}},procs:null,frame:null,lecTypes:null,examTypes:null,pinHash:null,pinSalt:null,ownerEmail:""};
+const DEF={name:"ENT Residency Program",defTime:"12:00",yearStart:null,residents:[],lectures:[],exams:[],scores:{},att:{},rotTypes:[],rot:{},rp:{},graduates:[],theatre:{lists:[],weeks:{}},duty:{days:{}},who:{},trainers:[],procs:null,frame:null,lecTypes:null,examTypes:null,pinHash:null,pinSalt:null,ownerEmail:""};
 let VIEWER=false;
 let ST=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return Object.assign({},DEF)}})();
 function saveLocal(){if(VIEWER)return;try{localStorage.setItem(KEY,JSON.stringify(ST))}catch(e){}}
@@ -449,7 +449,7 @@ function rotAt(r,date){const b=blocksOf(r.id).find(x=>x.from<=date&&date<=x.to);
 function rpOf(r){if(!ST.rp[r.id])ST.rp[r.id]={boardStart:"",since:"",phone:"",email:"",notes:"",hist:[]};return ST.rp[r.id]}
 
 /* ================= router ================= */
-const VIEWER_TABS=["week","lectures","exams","duty"];
+const VIEWER_TABS=["mine","week","lectures","exams","duty"];
 let TAB=location.hash.slice(1)||"week";
 function go(t){TAB=t;location.hash=t;render()}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
@@ -461,7 +461,7 @@ function render(){
   $("#psub").textContent=`${ST.residents.length} resident${ST.residents.length===1?"":"s"} · ${ST.lectures.length} lectures (${up} upcoming) · ${ST.exams.length} exams`;
   if(VIEWER&&!VIEWER_TABS.includes(TAB))TAB="week";
   $$("nav.tabs button").forEach(b=>{b.setAttribute("aria-selected",b.dataset.t===TAB);b.style.display=VIEWER&&!VIEWER_TABS.includes(b.dataset.t)?"none":""});
-  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,rot:vRot,people:vResidents,report:vReport,ops:vOps,frame:vFrame,settings:vSettings}[TAB]||vWeek;
+  const V={week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,frame:vFrame,settings:vSettings}[TAB]||vWeek;
   const y=window.scrollY;$("#view").innerHTML=V();bind();if(render.keep){window.scrollTo(0,y);render.keep=false}else window.scrollTo(0,0);
 }
 function rerender(){render.keep=true;render()}
@@ -732,8 +732,8 @@ const isFri=d=>dt(d).getDay()===5;
 function dutyIssues(m){
   const out={},add=(d,t)=>(out[d]=out[d]||[]).push(t);
   moDays(m).forEach(d=>{const x=dutyOf(d),oc=dutyNames(x.oc),prev=dutyOf(addD(d,-1)).oc;
-    if(oc.length&&!oc.some(r=>r.level>=3))add(d,"No R3 or above on call");
-    oc.forEach(r=>{if(prev.includes(r.id))add(d,r.name+" is on call two days in a row")})});
+    if(oc.length&&!oc.some(r=>r.level>=3))add(d,"No R3 or above on 24");
+    oc.forEach(r=>{if(prev.includes(r.id))add(d,r.name+" is on 24 two days in a row")})});
   return out;
 }
 function dutyCounts(m){const c={};const z=id=>c[id]=c[id]||{am:0,oc:0,fri:0};
@@ -746,20 +746,20 @@ function vDuty(){
   <div class="row noprint" style="margin-bottom:12px"><button class="btn sm" id="dnow">This month</button>${VIEWER?"":`<button class="btn sm" id="drep">Repeat first week</button><button class="btn sm" id="dclear">Clear month</button>`}<button class="btn sm" id="dshare">Share month</button><button class="btn sm" id="dprint">Print</button><button class="btn sm" id="dcsv">Excel</button></div>
   <p class="note print-only" style="display:none">${esc(ST.name)} · Duty roster ${moName(DMO)}</p>`;
   if(!ST.residents.length)return h+`<div class="empty">Add residents on the Residents tab first.</div>`;
-  if(!VIEWER)h+=`<p class="note noprint" style="margin-top:0">Tap a day to choose the morning and 24-hour on-call residents. On call 24h includes the morning. Fill the first week, then press Repeat first week to fill the rest of the month by weekday.</p>`;
+  if(!VIEWER)h+=`<p class="note noprint" style="margin-top:0">Tap a day to choose the morning and 24 residents. 24 includes the morning. Fill the first week, then press Repeat first week to fill the rest of the month by weekday.</p>`;
   if(nIss)h+=`<div class="panel" style="border-color:var(--warn);margin-bottom:12px"><b style="color:var(--warn)">${nIss} thing${nIss===1?"":"s"} to check</b>${Object.entries(iss).map(([d,a])=>a.map(x=>`<div class="note" style="margin-top:4px">${dShort(d)}: ${esc(x)}</div>`).join("")).join("")}</div>`;
-  h+=`<div class="panel" style="padding:4px 8px;overflow-x:auto"><table class="rep duty"><thead><tr><th style="width:64px">Day</th><th>Morning</th><th>On call 24h</th></tr></thead><tbody>`+days.map(d=>{const x=dutyOf(d);
+  h+=`<div class="panel" style="padding:4px 8px;overflow-x:auto"><table class="rep duty"><thead><tr><th style="width:64px">Day</th><th>Morning</th><th>24</th></tr></thead><tbody>`+days.map(d=>{const x=dutyOf(d);
     const bg=d===t?"background:var(--act-soft)":isFri(d)?"background:var(--bg)":"";
     return `<tr ${VIEWER?"":`data-dd="${d}" style="cursor:pointer;${bg}"`} ${VIEWER?`style="${bg}"`:""}><td><b>${dShort(d)}</b>${iss[d]?` <span style="color:var(--warn)" title="${esc(iss[d].join("; "))}">⚠</span>`:""}</td><td>${dutyTags(x.am)}</td><td>${dutyTags(x.oc)}${x.sp?`<div class="note">Specialist: ${esc(x.sp)}</div>`:""}</td></tr>`}).join("")+`</tbody></table></div>`;
   const c=dutyCounts(DMO);
-  h+=`<h3>Totals this month</h3><div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Resident</th><th>Days present<br><span class="note">mornings incl. on-call</span></th><th>On call 24h</th><th>Fridays on call</th></tr></thead><tbody>${sortedRes().map(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};return `<tr><td>${esc(r.name)} R${r.level}</td><td>${k.am}</td><td>${k.oc}</td><td>${k.fri}</td></tr>`}).join("")}</tbody></table></div>`;
+  h+=`<h3>Totals this month</h3><div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Resident</th><th>Days present<br><span class="note">mornings incl. 24</span></th><th>24</th><th>Fridays on 24</th></tr></thead><tbody>${sortedRes().map(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};return `<tr><td>${esc(r.name)} R${r.level}</td><td>${k.am}</td><td>${k.oc}</td><td>${k.fri}</td></tr>`}).join("")}</tbody></table></div>`;
   return h;
 }
 function dutySheet(d){const x=dutyOf(d),prev=dutyOf(addD(d,-1)).oc,next=dutyOf(addD(d,1)).oc;
   const col=(key,sel,hint)=>`<div class="panel attl" style="margin-top:6px">${sortedRes().map(r=>{const h=hint(r);return `<label><input type="checkbox" data-${key}="${r.id}" ${sel.includes(r.id)?"checked":""}> ${esc(r.name)} <span class="note">R${r.level}${h?" · "+h:""}</span></label>`}).join("")}</div>`;
   openSheet(`<h3>${fdw(d)}</h3><h3 style="margin-top:14px">Morning</h3>${col("dam",x.am,r=>{const m=rotAt(r,d);return m?esc(m.n):""})}
-  <h3 style="margin-top:14px">On call 24h</h3>${col("doc",x.oc,r=>prev.includes(r.id)?'<span style="color:var(--warn)">on call the day before</span>':next.includes(r.id)?'<span style="color:var(--warn)">on call the day after</span>':"")}
-  ${field("Specialist on call (optional)",inp("d_sp",x.sp,'placeholder="Dr. …"'))}
+  <h3 style="margin-top:14px">24</h3>${col("doc",x.oc,r=>prev.includes(r.id)?'<span style="color:var(--warn)">on 24 the day before</span>':next.includes(r.id)?'<span style="color:var(--warn)">on 24 the day after</span>':"")}
+  ${field("Specialist on 24 (optional)",inp("d_sp",x.sp,'placeholder="Dr. …" list="trdl"')+dlist("trdl",trainersList()))}
   <div class="row" style="margin-top:12px"><button class="btn p" id="d_save">Save</button><button class="btn" id="d_clr">Clear day</button><button class="btn" id="d_cancel">Cancel</button></div>`);
   const D=DU();
   $("#d_cancel").onclick=closeSheet;
@@ -770,7 +770,7 @@ function dutySheet(d){const x=dutyOf(d),prev=dutyOf(addD(d,-1)).oc,next=dutyOf(a
 function dutyText(){let txt=`${ST.name}\nDuty roster: ${moName(DMO)}\n`;
   moDays(DMO).forEach(d=>{const x=dutyOf(d);if(!x.am.length&&!x.oc.length)return;txt+=`\n${fdw(d)}\n`;
     if(x.am.length)txt+=`  Morning: ${dutyNames(x.am).map(r=>r.name).join(", ")}\n`;
-    if(x.oc.length||x.sp)txt+=`  On call 24h: ${dutyNames(x.oc).map(r=>r.name).join(", ")||"—"}${x.sp?" (Specialist: "+x.sp+")":""}\n`});return txt}
+    if(x.oc.length||x.sp)txt+=`  24: ${dutyNames(x.oc).map(r=>r.name).join(", ")||"—"}${x.sp?" (Specialist: "+x.sp+")":""}\n`});return txt}
 function bindDuty(){
   const on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};
   on("#dprev",()=>{DMO=addMo(DMO,-1);rerender()});on("#dnext",()=>{DMO=addMo(DMO,1);rerender()});on("#dnow",()=>{DMO=today().slice(0,7);rerender()});
@@ -781,10 +781,48 @@ function bindDuty(){
   on("#dclear",()=>{if(!confirm("Clear the whole of "+moName(DMO)+"?"))return;const D=DU();moDays(DMO).forEach(d=>delete D.days[d]);save();rerender()});
   on("#dshare",()=>shareText(dutyText()));
   on("#dprint",()=>window.print());
-  on("#dcsv",()=>{const rows=[["Date","Day","Morning","On call 24h","Specialist on call"]].concat(moDays(DMO).map(d=>{const x=dutyOf(d);return [d,DAY[dt(d).getDay()],dutyNames(x.am).map(r=>r.name).join(", "),dutyNames(x.oc).map(r=>r.name).join(", "),x.sp]}));
-    const c=dutyCounts(DMO);rows.push([],["Resident","Year","Days present (incl. on-call)","On call 24h","Fridays on call"]);sortedRes().forEach(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};rows.push([r.name,"R"+r.level,k.am,k.oc,k.fri])});
+  on("#dcsv",()=>{const rows=[["Date","Day","Morning","24","Specialist on call"]].concat(moDays(DMO).map(d=>{const x=dutyOf(d);return [d,DAY[dt(d).getDay()],dutyNames(x.am).map(r=>r.name).join(", "),dutyNames(x.oc).map(r=>r.name).join(", "),x.sp]}));
+    const c=dutyCounts(DMO);rows.push([],["Resident","Year","Days present (incl. 24)","24","Fridays on 24"]);sortedRes().forEach(r=>{const k=c[r.id]||{am:0,oc:0,fri:0};rows.push([r.name,"R"+r.level,k.am,k.oc,k.fri])});
     download(new Blob([csv(rows)],{type:"text/csv"}),"duty-roster-"+DMO+".csv")});
 }
+
+/* ================= my schedule (per person) ================= */
+let MYHASH=null,MINEPICK=null,MMO=null;const HASHES={};
+async function emailHash(e){const b=await crypto.subtle.digest("SHA-256",enc.encode(String(e||"").trim().toLowerCase()));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+function WHO(){if(!ST.who||typeof ST.who!=="object")ST.who={};return ST.who}
+const trainersList=()=>Array.isArray(ST.trainers)?ST.trainers:[];
+const personLabel=k=>{if(!k)return"";if(k.startsWith("r:")){const r=resById(k.slice(2));return r?r.name+" (R"+r.level+")":""}if(k.startsWith("t:"))return k.slice(2)+" (trainer)";return""};
+const personOptions=sel=>opt("","— not linked —",!sel)+sortedRes().map(r=>opt("r:"+r.id,r.name+" (R"+r.level+")","r:"+r.id===sel)).join("")+trainersList().map(t=>opt("t:"+t,t+" (trainer)","t:"+t===sel)).join("");
+function myKey(){if(!VIEWER&&MINEPICK!=null)return MINEPICK;return MYHASH?WHO()[MYHASH]||"":""}
+function vMine(){
+  if(!MMO)MMO=today().slice(0,7);const k=myKey(),t=today();
+  let h=`<h2>My schedule</h2>`;
+  if(!VIEWER)h+=`<div class="panel noprint" style="margin-bottom:12px">${field("Show the schedule of",`<select class="f2" id="mpick">${personOptions(k)}</select>`)}</div>`;
+  if(!k)return h+`<div class="empty">${VIEWER?"Your email is not linked to your name yet. Ask the program director to link it.":"Choose a resident or trainer above. Link each email to a person in Settings, under access."}</div>`;
+  const isRes=k.startsWith("r:"),id=k.slice(2),name=isRes?(resById(id)||{}).name||"":id;
+  if(isRes&&!resById(id))return h+`<div class="empty">This person is no longer on the residents list.</div>`;
+  h+=`<p style="margin-top:0"><b>${esc(personLabel(k))}</b></p><div class="row noprint" style="margin-bottom:12px"><button class="btn" id="mprev">‹</button><b style="flex:1;text-align:center">${moName(MMO)}</b><button class="btn" id="mnext">›</button></div>`;
+  const rows=[];let n24=0,nam=0;
+  moDays(MMO).forEach(d=>{const x=dutyOf(d);let what="";
+    if(isRes){if(x.oc.includes(id)){what="24";n24++}else if(x.am.includes(id)){what="Morning";nam++}}
+    else if(x.sp&&x.sp.trim().toLowerCase()===id.trim().toLowerCase()){what="24 (specialist)";n24++}
+    if(what)rows.push([d,what])});
+  h+=`<div class="panel" style="padding:4px 8px"><table class="rep"><thead><tr><th>Day</th><th>Duty</th></tr></thead><tbody>${rows.map(([d,w])=>`<tr style="${d===t?"background:var(--act-soft)":""}"><td><b>${dShort(d)}</b></td><td>${w.startsWith("24")?`<b>${w}</b>`:w}</td></tr>`).join("")||`<tr><td colspan="2" class="note">No duties this month.</td></tr>`}</tbody></table></div>
+  <p class="note">${n24} × 24${isRes?" · "+nam+" mornings · "+(n24+nam)+" days in all":""}</p>`;
+  const nm=name.trim().toLowerCase();
+  const L=lecSorted().filter(l=>l.date>=t&&(isRes?l.presenter===id:(l.presenterText||"").toLowerCase().includes(nm)||(l.notes||"").toLowerCase().includes(nm)));
+  h+=`<h3>My lectures</h3><div class="panel">${L.map(l=>`<div class="kv"><span>${esc(l.title)}<div class="note">${esc(l.type||"")}${l.ref?" · "+esc(l.ref):""}</div></span><span>${fd(l.date)} ${esc(l.time||"")}</span></div>`).join("")||'<p class="note">No upcoming lectures for you.</p>'}</div>`;
+  if(isRes){const E=examSorted().filter(e=>e.date>=t).slice(0,3);
+    h+=`<h3>Next exams</h3><div class="panel">${E.map(e=>`<div class="kv"><span>${esc(e.name)}</span><span>${fd(e.date)} ${esc(e.time||"")}</span></div>`).join("")||'<p class="note">No exams coming up.</p>'}</div>`}
+  return h;
+}
+function bindMine(){const on=(sel,f)=>{const e=$(sel);if(e)e.onclick=f};
+  on("#mprev",()=>{MMO=addMo(MMO,-1);rerender()});on("#mnext",()=>{MMO=addMo(MMO,1);rerender()});
+  const mp=$("#mpick");if(mp)mp.onchange=()=>{MINEPICK=mp.value;rerender()};
+  document.querySelectorAll("[data-who]").forEach(s=>s.onchange=async()=>{const h=await emailHash(s.dataset.who);if(s.value)WHO()[h]=s.value;else delete WHO()[h];save();toast("Saved")});
+  const tr=$("#trsave");if(tr)tr.onclick=()=>{ST.trainers=$("#trlist").value.split("\n").map(x=>x.trim()).filter(Boolean);save();toast("Saved");rerender()};
+}
+function ensureHashes(emails){const miss=emails.filter(e=>!(e in HASHES));if(!miss.length)return;Promise.all(miss.map(async e=>{HASHES[e]=await emailHash(e)})).then(()=>{if(TAB==="settings")liveRender()})}
 
 /* ================= operative levels (editable) ================= */
 let OPSY=0;
@@ -930,6 +968,7 @@ function bind(){
   on("#bexp",()=>{const d=JSON.parse(JSON.stringify(ST));delete d.pinHash;delete d.pinSalt;download(new Blob([JSON.stringify(d,null,1)],{type:"application/json"}),"ent-program-backup-"+today()+".json")});
   const bi=$("#bimp");if(bi)bi.onchange=async()=>{const f=bi.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!confirm("Replace everything with this backup?"))return;const keep={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};ST=Object.assign({},DEF,d,keep);migrate();seedTables();save();toast("Imported");render()}catch(e){toast("That file could not be read")}};
   bindDuty();
+  bindMine();
   bindAccess();
 }
 
@@ -955,7 +994,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 const FBV="10.12.2",FB="https://www.gstatic.com/firebasejs/"+FBV+"/";
 let LIVE=null; // {auth,db,fs,user,role,unsub:[]}
 let CFG=null,pendingRender=false,writeT=null,lastWrite=0;
-const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime","duty"];
+const PUBLIC_KEYS=["v","name","residents","lectures","exams","defTime","duty","who","trainers"];
 const PRIVATE_KEYS=["scores","att","rotTypes","rot","rp","graduates","theatre","procs","frame","lecTypes","examTypes","yearStart"];
 function pick(o,keys){const r={};keys.forEach(k=>{if(o[k]!==undefined)r[k]=o[k]});return r}
 function isEditing(){const a=document.activeElement;return $("#scrim").classList.contains("open")||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName))}
@@ -1009,7 +1048,7 @@ async function resolveRole(){
   if(!role){try{await fs.getDoc(fs.doc(db,"program","public"));role="viewer"}catch(e){}}
   if(!role){shell(`<h2>No access yet</h2><p>Your account <b dir="ltr">${esc(LIVE.user.email)}</b> is not on this program's list.</p><p class="note">Send this email to your program director so they can add you, then press Try again.</p><div class="row"><button class="btn p" id="ta">Try again</button><button class="btn" id="so">Sign out</button></div>`);
     $("#ta").onclick=resolveRole;$("#so").onclick=()=>LIVE.au.signOut(LIVE.auth);return}
-  LIVE.role=role;VIEWER=role!=="admin";document.querySelector("nav.tabs").style.display="";
+  LIVE.role=role;VIEWER=role!=="admin";emailHash(LIVE.user.email).then(h=>{MYHASH=h;if(VIEWER&&TAB==="week"&&WHO()[h])TAB="mine";liveRender()});document.querySelector("nav.tabs").style.display="";
   const pubRef=fs.doc(db,"program","public"),prvRef=fs.doc(db,"program","private");
   if(role==="admin"){
     const pub=await fs.getDoc(pubRef).catch(()=>null),prv=await fs.getDoc(prvRef).catch(()=>null);
@@ -1029,14 +1068,16 @@ async function pushNow(){const {fs,db}=LIVE;await fs.setDoc(fs.doc(db,"program",
 /* ---------- settings panel ---------- */
 function accessPanel(){
   if(LIVE&&LIVE.role==="admin"){const L=LIVE.lists||{admins:[],viewers:[]};
-    const li=(arr,kind)=>(arr||[]).map(e=>`<div class="kv"><span dir="ltr">${esc(e)}</span><span><button class="btn sm d" data-rm="${kind}|${esc(e)}">Remove</button></span></div>`).join("")||'<p class="note">Nobody yet.</p>';
+    ensureHashes([...(L.viewers||[]),...(L.admins||[])]);
+    const li=(arr,kind)=>(arr||[]).map(e=>{const cur=HASHES[e]?WHO()[HASHES[e]]||"":"";return `<div class="kv" style="flex-wrap:wrap"><span dir="ltr" style="flex:1;min-width:160px">${esc(e)}</span><span style="display:flex;gap:6px;align-items:center"><select data-who="${esc(e)}" style="padding:6px;border:1px solid var(--line);border-radius:7px;background:var(--surface);max-width:190px">${personOptions(cur)}</select><button class="btn sm d" data-rm="${kind}|${esc(e)}">Remove</button></span></div>`}).join("")||'<p class="note">Nobody yet.</p>';
     return `<h2>Live sync and access</h2><div class="panel noprint"><p>Signed in as <b dir="ltr">${esc(LIVE.user.email)}</b>. <span class="note" id="syncst">${esc(SYNC)}</span></p>
-    <p class="note">Every change you make reaches everyone within seconds. Residents see only the lecture schedule and exam dates.</p>
+    <p class="note">Every change you make reaches everyone within seconds. Residents see the lectures, exam dates, the duty roster and their own schedule.</p>
     <h3>Residents and consultants (view only)</h3>${li(L.viewers,"viewers")}
     <div class="row" style="margin-top:8px"><input id="newv" type="email" dir="ltr" placeholder="email@example.com" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button class="btn p" id="addv">Add viewer</button></div>
     <h3>Co-editors (can change the program)</h3>${li(L.admins,"admins")}
     <div class="row" style="margin-top:8px"><input id="newa" type="email" dir="ltr" placeholder="email@example.com" style="flex:1;min-width:200px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button class="btn" id="adda">Add co-editor</button></div>
-    <p class="note">Send them the app link. They create an account with the same email and confirm it.</p>
+    <p class="note">Send them the app link. They create an account with the same email and confirm it. Choose the name next to each email so they see their own duties and lectures under My schedule.</p>
+    <h3>Trainers</h3><p class="note">One name per line, written the same way as in the duty roster's specialist box.</p><textarea class="f2" id="trlist" rows="5">${esc(trainersList().join("\n"))}</textarea><div class="row" style="margin-top:6px"><button class="btn" id="trsave">Save trainers</button></div>
     <div class="row" style="margin-top:10px">${ST.pinHash?'<button class="btn" id="pinset">Change PIN</button><button class="btn d" id="pinoff">Remove PIN</button>':'<button class="btn" id="pinset">Lock this device with a PIN</button>'}<button class="btn" id="signout2">Sign out</button></div></div>`}
   return `<h2>Live sync and access</h2><div class="panel noprint">
   <p>This program is saved on this device only. Connect it to Firebase (free, by Google) so you can edit it and everyone you choose sees the update straight away. Residents will see only the lecture schedule and exam dates.</p>

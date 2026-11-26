@@ -190,6 +190,9 @@ select.f2,input.f2,textarea.f2{width:100%;padding:8px 10px;border:1px solid var(
 .tile:active{transform:scale(.98)}
 .tile .ic{font-size:1.6rem;line-height:1}
 .tile .tl-n{position:absolute;top:10px;inset-inline-end:10px;background:#B42318;color:#fff;border-radius:999px;font-size:.75rem;padding:1px 8px}
+#bell{float:right;position:relative;margin:0 0 6px 8px;padding:3px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.15);color:inherit;font-size:1rem;cursor:pointer;line-height:1.4}
+#bell .bn{position:absolute;top:-7px;right:-7px;background:#E5484D;color:#fff;border-radius:999px;font-size:.7rem;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 4px}
+[dir=rtl] #bell{float:left;margin:0 8px 6px 0}
 </style>
 </head>
 <body>
@@ -493,7 +496,7 @@ function render(){
   $$("nav.tabs button").forEach(b=>{if(!b.dataset.l)b.dataset.l=b.textContent;const n=PN[b.dataset.t];b.textContent=b.dataset.l+(n?" ("+n+")":"");b.setAttribute("aria-selected",b.dataset.t===TAB);b.style.display=VIEWER&&!viewerTabs().includes(b.dataset.t)?"none":""});
   if(TAB==="conduct"&&VIEWER&&MYRID)cdMarkSeen();
   const V={home:vHome,week:vWeek,lectures:vLectures,exams:vExams,theatre:vTheatre,duty:vDuty,mine:vMine,rot:vRot,people:vResidents,report:vReport,ops:vOps,log:vLog,assess:vEval,conduct:vConduct,reqs:vReqs,frame:vFrame,settings:vSettings}[TAB]||vWeek;
-  const y=window.scrollY;$("#view").innerHTML=V();bind();if(render.keep){window.scrollTo(0,y);render.keep=false}else window.scrollTo(0,0);
+  const y=window.scrollY;$("#view").innerHTML=V();bind();if(typeof drawBell==="function")drawBell();if(render.keep){window.scrollTo(0,y);render.keep=false}else window.scrollTo(0,0);
 }
 function rerender(){render.keep=true;render()}
 /* ================= home (welcome) ================= */
@@ -1736,6 +1739,45 @@ function initLang(){
   new MutationObserver(ms=>ms.forEach(m=>{if(m.type==="characterData")trNode(m.target);else if(m.type==="attributes")trNode(m.target);else m.addedNodes.forEach(trNode)})).observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["placeholder","title"]});
 }
 initLang();
+/* ================= notifications bell ================= */
+const L2=(en,ar)=>LANG==="ar"?ar:en;
+const ARD=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+const nDay=d=>{const x=dt(d);return (LANG==="ar"?ARD[x.getDay()]:DAYS3[x.getDay()])+" "+x.getDate()+"/"+(x.getMonth()+1)};
+function mySnap(){const rid=MYRID,r=resById(rid);if(!r)return null;const t=today(),end=addD(t,62),S={};
+  Object.entries(DU().days).forEach(([d,x])=>{if(d<t||d>end)return;if((x.oc||[]).includes(rid))S["duty:"+d]=[d,"24"];else if((x.am||[]).includes(rid))S["duty:"+d]=[d,"am"]});
+  for(let i=0;i<63;i++){const d=addD(t,i);TH().lists.filter(l=>+l.day===tIdx(d)).forEach(l=>{if(tAssigned(d,l.id).includes(rid))S["th:"+d+l.id]=[d,l.name]})}
+  ST.lectures.forEach(l=>{if(l.presenter===rid&&l.date>=t)S["lec:"+l.id]=[l.date,(l.title||"")+"|"+(l.time||"")]});
+  ST.exams.forEach(e=>{const ys=exYears(e);if(e.date>=t&&(!ys||ys.includes(r.level)))S["ex:"+e.id]=[e.date,e.name]});
+  REQB().forEach(q=>{if(q.rid===rid&&(q.status==="ok"||q.status==="rejected"))S["req:"+q.id]=["",q.kind+"|"+q.status+"|"+(q.from||"")];if(q.withRid===rid&&q.status==="ok")S["sw:"+q.id]=["","swap|ok|"+(q.from||"")]});
+  CONDB().forEach(c=>{if(c.rid===rid)S["cd:"+c.id]=["",c.kind]});
+  return S}
+const NK=()=>"ent-nseen-"+MYRID;
+function myNotes(){
+  if(!VIEWER)return [...(pendN().reqs?[{tab:"reqs",txt:L2(pendN().reqs+" request(s) waiting for you",pendN().reqs+" طلب بانتظارك")}]:[]),...(pendN().log?[{tab:"log",txt:L2(pendN().log+" logbook case(s) waiting for approval",pendN().log+" حالة لوق بوك بانتظار الموافقة")}]:[])];
+  if(MYTR){const n=pendN().log;return n?[{tab:"log",txt:L2(n+" case(s) waiting for your approval",n+" حالة بانتظار موافقتك")}]:[]}
+  if(!MYRID)return [];
+  const ready=!LIVE||(CCOND!==null&&CREQS!==null);const S=mySnap();if(!S)return [];
+  let O=null;try{O=JSON.parse(localStorage.getItem(NK())||"null")}catch(e){}
+  if(!O){if(ready)try{localStorage.setItem(NK(),JSON.stringify(S))}catch(e){}return []}
+  const t=today(),out=[];
+  Object.keys(Object.assign({},O,S)).sort((a,b)=>((S[a]||O[a])[0]).localeCompare((S[b]||O[b])[0])).forEach(k=>{const n=S[k],o=O[k];if(JSON.stringify(n)===JSON.stringify(o))return;if(o&&!n&&o[0]&&o[0]<t)return;
+    const ty=k.split(":")[0],d=(n||o)[0],sh=v=>v==="24"?L2("24 duty","مناوبة 24"):L2("morning duty","دوام صباحي");
+    if(ty==="duty")out.push({tab:"mine",txt:n&&!o?L2(`${nDay(d)}: you now have ${sh(n[1])}`,`${nDay(d)}: صار عندك ${sh(n[1])}`):o&&!n?L2(`${nDay(d)}: your ${sh(o[1])} was removed`,`${nDay(d)}: انشالت ${sh(o[1])}`):L2(`${nDay(d)}: changed to ${sh(n[1])}`,`${nDay(d)}: صار عندك ${sh(n[1])} بدل ${sh(o[1])}`)});
+    else if(ty==="th")out.push({tab:"theatre",txt:n?L2(`${nDay(d)}: you are on the theatre list (${n[1]})`,`${nDay(d)}: صار عندك عمليات (${n[1]})`):L2(`${nDay(d)}: removed from theatre`,`${nDay(d)}: انشلت من العمليات`)});
+    else if(ty==="lec"){const ti=(n||o)[1].split("|")[0];out.push({tab:"lectures",txt:n?L2(`Your lecture "${ti}" is on ${nDay(n[0])}${o?" (new date)":""}`,`محاضرتك "${ti}" يوم ${nDay(n[0])}${o?" (موعد جديد)":""}`):L2(`Your lecture "${ti}" was cancelled or moved`,`محاضرتك "${ti}" انلغت أو انتقلت`)})}
+    else if(ty==="ex")out.push({tab:"exams",txt:n?L2(`Exam "${n[1]}" on ${nDay(n[0])}${o?" (new date)":""}`,`امتحان "${n[1]}" يوم ${nDay(n[0])}${o?" (موعد جديد)":""}`):L2(`Exam "${o[1]}" was cancelled`,`امتحان "${o[1]}" انلغى`)});
+    else if((ty==="req"||ty==="sw")&&n){const [kind,st,frm]=n[1].split("|");out.push({tab:"reqs",txt:ty==="sw"?L2(`A duty swap with you on ${nDay(frm)} was approved`,`تبديل مناوبة معك يوم ${nDay(frm)} انقبل`):L2(`Your ${kind==="leave"?"leave":"swap"} request${frm?" for "+nDay(frm):""} was ${st==="ok"?"approved":"declined"}`,`${kind==="leave"?"طلب الإجازة":"طلب التبديل"} تبعك${frm?" ليوم "+nDay(frm):""} ${st==="ok"?"انقبل":"انرفض"}`)})}
+    else if(ty==="cd"&&n&&!o)out.push({tab:"conduct",txt:n[1]==="award"?L2("You received a new award 🎉","انسجلت لك مكافأة جديدة 🎉"):L2("New record from the program committee","سجل جديد من لجنة البرنامج")})});
+  return out}
+function drawBell(){const b=$("#bell");if(!b)return;const n=myNotes().length;b.querySelector(".bn").textContent=n>9?"9+":n;b.querySelector(".bn").style.display=n?"":"none"}
+function openBell(){const N=myNotes();
+  openSheet(`<h3>${L2("Notifications","الإشعارات")}</h3>${N.length?`<div class="panel">${N.map((x,i)=>`<div class="kv" data-nt="${x.tab}" style="cursor:pointer"><span class="w">${esc(x.txt)}</span><span>›</span></div>`).join("")}</div>`:`<p class="note" data-notr>${L2("No new notifications.","ما في إشعارات جديدة.")}</p>`}<div class="row" style="margin-top:12px"><button class="btn" id="bclose" data-notr>${L2("Close","إغلاق")}</button></div>`);
+  if(MYRID){const S=mySnap();if(S)try{localStorage.setItem(NK(),JSON.stringify(S))}catch(e){}}
+  const fin=()=>{closeSheet();drawBell()};
+  $("#bclose").onclick=fin;$$("[data-nt]").forEach(e=>e.onclick=()=>{closeSheet();go(e.dataset.nt)});drawBell()}
+function initBell(){const b=document.createElement("button");b.id="bell";b.type="button";b.setAttribute("aria-label","Notifications");b.setAttribute("data-notr","");b.innerHTML='🔔<span class="bn" style="display:none">0</span>';b.onclick=openBell;
+  document.querySelector("header.app .in").prepend(b)}
+initBell();
 
 start();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});

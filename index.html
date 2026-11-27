@@ -487,6 +487,7 @@ function go(t){TAB=t;location.hash=t;render()}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
 window.addEventListener("hashchange",()=>{TAB=location.hash.slice(1)||"home";render()});
 function render(){
+  if(typeof PGATE!=="undefined"&&PGATE)return;
   if(typeof pendingRender!=="undefined")pendingRender=false;
   $("#pname").innerHTML=esc(ST.name)+(VIEWER?'<span class="viewer-tag">view only</span>':"");
   const up=ST.lectures.filter(l=>l.date>=today()).length;
@@ -1521,7 +1522,7 @@ async function resolveRole(){
   try{await fs.getDoc(fs.doc(db,"program","private"));role="admin"}catch(e){}
   if(!role){try{await fs.getDoc(fs.doc(db,"program","public"));role="viewer"}catch(e){}}
   if(!role){profGate();return}
-  LIVE.role=role;VIEWER=role!=="admin";emailHash(LIVE.user.email).then(h=>{MYHASH=h;subRecs();liveRender()});document.querySelector("nav.tabs").style.display="";
+  LIVE.role=role;VIEWER=role!=="admin";emailHash(LIVE.user.email).then(h=>{MYHASH=h;subRecs();liveRender();if(VIEWER&&String(WHO()[h]||"").startsWith("r:"))resProfCheck()});document.querySelector("nav.tabs").style.display="";
   const pubRef=fs.doc(db,"program","public"),prvRef=fs.doc(db,"program","private");
   if(role==="admin"){
     const pub=await fs.getDoc(pubRef).catch(()=>null),prv=await fs.getDoc(prvRef).catch(()=>null);
@@ -1774,6 +1775,11 @@ function profErr(v){if(v.name.length<5)return "Write your full name";if(!/^[0-9+
 function msView(p){const S=p.susp||[],M=p.ms||{};const done=MS.filter(([k])=>M[k]&&M[k].ok);
   return `<h3>Suspension periods</h3><div class="panel">${S.length?S.map(s=>`<div class="kv"><span>${fdy(s.from)} – ${fdy(s.to)}</span><span>${esc(s.reason||"")}</span></div>`).join(""):'<p class="note">None.</p>'}</div>
   <h3>Exams passed</h3><div class="panel">${done.length?done.map(([k,n])=>`<div class="kv"><span>${n}</span><span>${M[k].date?fdy(M[k].date):"—"}</span></div>`).join(""):'<p class="note">None recorded.</p>'}</div>`}
+let PGATE=false;
+async function resProfCheck(){const {fs,db}=LIVE;let s=null;try{s=await fs.getDoc(fs.doc(db,"profiles",LIVE.user.uid))}catch(e){return}
+  if(s&&s.exists())return;
+  const r=resById(MYRID)||{};PGATE=true;
+  profForm({name:r.name||""},()=>{PGATE=false;document.querySelector("nav.tabs").style.display="";render();toast("Sent to the program director")})}
 /* sign-up side */
 async function profGate(){const {fs,db}=LIVE,ref=fs.doc(db,"profiles",LIVE.user.uid);let d=null;try{const s=await fs.getDoc(ref);d=s.exists()?s.data():null}catch(e){}
   const so=()=>LIVE.au.signOut(LIVE.auth);
@@ -1781,14 +1787,14 @@ async function profGate(){const {fs,db}=LIVE,ref=fs.doc(db,"profiles",LIVE.user.
   if(d&&d.status==="rejected"){shell(`<h2>Registration not approved</h2><p>Please contact the program director.</p><div class="row"><button class="btn" id="so">Sign out</button></div>`);$("#so").onclick=so;return}
   if(d&&d.status==="ok"){shell(`<h2>Your registration was approved</h2><p>Press Continue to open the program.</p><div class="row"><button class="btn p" id="ta">Continue</button><button class="btn" id="so">Sign out</button></div>`);$("#ta").onclick=resolveRole;$("#so").onclick=so;return}
   profForm(null)}
-function profForm(d){const {fs,db}=LIVE;
+function profForm(d,onDone){const {fs,db}=LIVE;
   shell(`<h2>Welcome to the program</h2><p class="lead">Before you start, fill in your details. The program director checks them and approves your account.</p>
   <p class="note" dir="ltr">${esc(LIVE.user.email)}</p>${profFields(d)}
   <div id="pf_m" class="note" style="min-height:1.3em;color:#B42318;margin-top:8px"></div>
   <div class="row" style="margin-top:8px"><button class="btn p" id="pf_send">Send for approval</button><button class="btn" id="so">Sign out</button></div>`);
   wireProf();$("#so").onclick=()=>LIVE.au.signOut(LIVE.auth);
   $("#pf_send").onclick=async()=>{const v=readProf(),e=profErr(v);if(e){$("#pf_m").textContent=tr(e);return}
-    $("#pf_send").disabled=true;try{const doc=Object.assign({email:String(LIVE.user.email).toLowerCase(),status:"pending",at:new Date().toISOString()},v);await fs.setDoc(fs.doc(db,"profiles",LIVE.user.uid),doc);profWait(doc)}catch(err){$("#pf_send").disabled=false;$("#pf_m").textContent=tr("Could not send: ")+(err.code||err.message)}}}
+    $("#pf_send").disabled=true;try{const doc=Object.assign({email:String(LIVE.user.email).toLowerCase(),status:"pending",at:new Date().toISOString()},v);await fs.setDoc(fs.doc(db,"profiles",LIVE.user.uid),doc);if(onDone)onDone(doc);else profWait(doc)}catch(err){$("#pf_send").disabled=false;$("#pf_m").textContent=tr("Could not send: ")+(err.code||err.message)}}}
 function profWait(d){shell(`<h2>Thank you, ${esc(d.name||"")}</h2><p>Your details were sent to the program director for review. You can open the program once they approve them.</p>
   <div class="row"><button class="btn p" id="ta">Check again</button><button class="btn" id="pe">Edit my details</button><button class="btn" id="so">Sign out</button></div>`);
   $("#ta").onclick=resolveRole;$("#pe").onclick=()=>profForm(d);$("#so").onclick=()=>LIVE.au.signOut(LIVE.auth)}
@@ -1796,7 +1802,8 @@ function profWait(d){shell(`<h2>Thank you, ${esc(d.name||"")}</h2><p>Your detail
 function regPanel(){const P=PROFS().filter(x=>x.status==="pending");if(!P.length||VIEWER)return "";
   return `<h3>New registrations (${P.length})</h3><div class="panel" style="border-color:var(--act)">${P.map(x=>`<div class="kv" data-reg="${x.id}" style="cursor:pointer"><span class="w"><b>${esc(x.name||"—")}</b><br><span class="note" dir="ltr">${esc(x.email||"")}</span></span><span><button class="btn sm mini p">Review</button></span></div>`).join("")}</div>`}
 function regSheet(id){const x=PROFS().find(p=>p.id===id);if(!x)return;const nm=(x.name||"").toLowerCase().replace(/^dr\.?\s*/,"");
-  const guess=ST.residents.find(r=>{const a=r.name.toLowerCase().split(/\s+/),b=nm.split(/\s+/);return a[0]&&b[0]&&a[0]===b[0]&&(a[1]||"")===(b[1]||"")})||null;
+  const lk=LIVE&&LIVE.res?String(LIVE.res[x.email]||""):"";
+  const guess=(lk&&!lk.startsWith("t:")&&resById(lk))||ST.residents.find(r=>{const a=r.name.toLowerCase().split(/\s+/),b=nm.split(/\s+/);return a[0]&&b[0]&&a[0]===b[0]&&(a[1]||"")===(b[1]||"")})||null;
   openSheet(`<h3>Review registration</h3><p class="note" dir="ltr" style="margin-top:-6px">${esc(x.email)} · ${x.at?fdy(x.at.slice(0,10)):""}</p>${profFields(x)}
   <h3>Account</h3><div class="panel"><div class="row"><div style="flex:2;min-width:160px">${field("This person is",`<select class="f2" id="rg_r"><option value="">A new resident</option>${sortedRes().map(r=>opt(r.id,r.name+" (R"+r.level+")",guess&&guess.id===r.id)).join("")}</select>`)}</div><div style="flex:1;min-width:90px">${field("Year",`<select class="f2" id="rg_l">${[1,2,3,4,5,6].map(y=>opt(y,"R"+y,y===(guess?guess.level:msLevel(x.ms)))).join("")}</select>`)}</div></div>
   <p class="note" style="margin:0">Approving adds this email to the program, links it to the resident, and saves these details in the resident's file.</p></div>

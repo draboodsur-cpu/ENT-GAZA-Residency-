@@ -972,7 +972,7 @@ function subRecs(){if(!LIVE||!LIVE.role||LIVE.recSub)return;const {fs,db}=LIVE;
   let Q;const col=c=>fs.collection(db,c),W=(c,k,v)=>fs.query(col(c),fs.where(k,"==",v));
   if(LIVE.role==="admin")Q={logs:col("logs"),reqs:col("reqs"),evals:col("evals"),conduct:col("conduct"),profiles:col("profiles")};
   else{const k=MYHASH?WHO()[MYHASH]||"":"";
-    if(k.startsWith("r:")){MYRID=k.slice(2);Q={logs:W("logs","rid",MYRID),reqs:W("reqs","rid",MYRID),evals:W("evals","rid",MYRID),conduct:W("conduct","rid",MYRID)}}
+    if(k.startsWith("r:")){MYRID=k.slice(2);resProfCheck();Q={logs:W("logs","rid",MYRID),reqs:W("reqs","rid",MYRID),evals:W("evals","rid",MYRID),conduct:W("conduct","rid",MYRID)}}
     else if(k.startsWith("t:")){MYTR=k.slice(2);CREQS=[];Q={logs:W("logs","sup",MYTR),evals:W("evals","by",myEmail())};if(cmList().includes(MYTR))Q.conduct=col("conduct")}
     else return}
   LIVE.recSub=true;
@@ -1522,7 +1522,7 @@ async function resolveRole(){
   try{await fs.getDoc(fs.doc(db,"program","private"));role="admin"}catch(e){}
   if(!role){try{await fs.getDoc(fs.doc(db,"program","public"));role="viewer"}catch(e){}}
   if(!role){profGate();return}
-  LIVE.role=role;VIEWER=role!=="admin";emailHash(LIVE.user.email).then(h=>{MYHASH=h;subRecs();liveRender();if(VIEWER&&String(WHO()[h]||"").startsWith("r:"))resProfCheck()});document.querySelector("nav.tabs").style.display="";
+  LIVE.role=role;VIEWER=role!=="admin";emailHash(LIVE.user.email).then(h=>{MYHASH=h;subRecs();liveRender()});document.querySelector("nav.tabs").style.display="";
   const pubRef=fs.doc(db,"program","public"),prvRef=fs.doc(db,"program","private");
   if(role==="admin"){
     const pub=await fs.getDoc(pubRef).catch(()=>null),prv=await fs.getDoc(prvRef).catch(()=>null);

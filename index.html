@@ -1939,8 +1939,8 @@ function roadRulesPanel(){const R=roadRules();
 function bindRoad(){const b=$("#rd_save");if(b)b.onclick=()=>{
   const rot=$("#rd_rot").value.split("\n").map(l=>l.split("|")).map(([n,m])=>({name:(n||"").trim(),m:Math.max(1,+(m||"").trim()||1)})).filter(x=>x.name);
   ST.road=Object.assign({},ST.road||{},{rules:{promoM:monList($("#rd_pm").value,ROAD_DEF.promoM),boardM:monList($("#rd_bm").value,ROAD_DEF.boardM),minM:Math.min(12,Math.max(6,+$("#rd_min").value||11)),lead:Math.min(6,Math.max(0,+$("#rd_lead").value||0)),rot}});seedRotTypes();save();toast("Saved");rerender()}}
-/* names only, so a new sign-up can pick who they are (program/names, readable by any signed-in user) */
-function syncNames(){if(typeof LIVE==="undefined"||!LIVE||LIVE.role!=="admin")return;const L=sortedRes().map(r=>({id:r.id,name:r.name,level:r.level})),j=JSON.stringify(L);if(j===LIVE.namesJ)return;LIVE.namesJ=j;
+/* names of residents with no linked account yet, so a new sign-up can pick who they are (program/names, readable by any signed-in user) */
+function syncNames(){if(typeof LIVE==="undefined"||!LIVE||LIVE.role!=="admin")return;const linked=new Set(Object.values(WHO()||{}).filter(v=>String(v).startsWith("r:")).map(v=>v.slice(2)));const L=sortedRes().filter(r=>!linked.has(r.id)).map(r=>({id:r.id,name:r.name,level:r.level})),j=JSON.stringify(L);if(j===LIVE.namesJ)return;LIVE.namesJ=j;
   LIVE.fs.setDoc(LIVE.fs.doc(LIVE.db,"program","names"),{list:L}).catch(e=>{LIVE.namesJ="";console.warn("names",e.code)})}
 /* make sure every required rotation is in the rotation list, so it can be assigned by name */
 function seedRotTypes(){if(VIEWER)return;roadRules().rot.forEach((x,i)=>{if(!ST.rotTypes.some(t=>rotNameEq(t.name,x.name)))ST.rotTypes.push({id:uid(),name:x.name,color:PALETTE[(ST.rotTypes.length+i)%PALETTE.length]})})}

@@ -1542,7 +1542,8 @@ async function resolveRole(){
     if(!pd){migrate();seedTables();await pushNow();toast("Your program was uploaded to the cloud")}
     else{const local={pinHash:ST.pinHash,pinSalt:ST.pinSalt,ownerEmail:ST.ownerEmail};const keep={};["logbook","evals"].forEach(k=>{if((!vd||vd[k]===undefined)&&Array.isArray(ST[k])&&ST[k].length)keep[k]=ST[k]});ST=Object.assign({},DEF,pd,vd||{},local,keep);PUBLIC_KEYS.forEach(k=>{if(pd[k]!==undefined)ST[k]=pd[k]});if(Object.keys(keep).length||pd.procs===undefined||pd.conductCm===undefined||pd.theatre===undefined)setTimeout(()=>pushLive(),800);
       if(migrate()){seedTables();await pushNow();toast("Program updated to the new version")}else seedTables();saveLocal()}
-    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data();if(!d||s.metadata.hasPendingWrites)return;markPushed(PUSHED.prv,d);PRIVATE_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});seedTables();saveLocal();liveRender();if(["logbook","evals"].some(k=>d[k]===undefined&&ST[k]&&ST[k].length))pushLive()}));
+    syncNames();
+    LIVE.unsub.push(fs.onSnapshot(prvRef,s=>{const d=s.data();if(!d||s.metadata.hasPendingWrites)return;markPushed(PUSHED.prv,d);PRIVATE_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});seedTables();saveLocal();liveRender();syncNames();if(["logbook","evals"].some(k=>d[k]===undefined&&ST[k]&&ST[k].length))pushLive()}));
     LIVE.unsub.push(fs.onSnapshot(fs.doc(db,"access","lists"),s=>{LIVE.lists=s.data()||{admins:[],viewers:[]};syncRes();if(TAB==="settings")liveRender()},()=>{}));
   }else{ST.scores={};ST.att={};ST.rot={};ST.rp={};ST.rotTypes=[];ST.graduates=[];ST.frame=[];ST.logbook=[];ST.evals=[]}
   LIVE.unsub.push(fs.onSnapshot(pubRef,s=>{const d=s.data();if(d&&!(s.metadata.hasPendingWrites&&!VIEWER)){markPushed(PUSHED.pub,d);PUBLIC_KEYS.forEach(k=>{if(d[k]!==undefined)ST[k]=d[k]});["lectures","exams","residents"].forEach(k=>{if(!Array.isArray(ST[k]))ST[k]=[]});if(!VIEWER)saveLocal()}
